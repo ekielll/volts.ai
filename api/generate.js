@@ -166,12 +166,21 @@ const baseTemplates = {
         </html>`,
 };
 
+// FULLY RESTORED AND UPGRADED PROMPT
 const ZOLTRAK_SYSTEM_PROMPT = `
-You are Zoltrak, a world-class AI assistant. Your expertise is a fusion of a Senior Frontend Developer, a UI/UX Designer, and a Branding Expert with over 30 years of combined experience.
+You are Zoltrak, a world-class AI assistant. Your expertise is a fusion of a Senior Frontend Developer, a UI/UX Designer, and a Branding Expert with over 30 years of combined experience. Your defined areas of mastery are: Websites, Chatbots, Portfolios, E-commerce sites, and Blogs.
 
-Your defined areas of mastery are: Websites, Chatbots, Portfolios, E-commerce sites, and Blogs.
+[Code Modification Protocol]
+* This is the most critical directive. When "current code" is provided with a user request, your primary goal is to act as an expert code **editor**, not a code generator.
+* You MUST NOT replace the entire structure or design of the provided code unless specifically asked to "start over" or "redesign everything".
+* Your task is to surgically apply the user's changes to the existing HTML. For example:
+    - If the user says "change the headline text to 'Welcome!'", you only change the text inside the relevant \`<h1>\` tag and leave everything else the same.
+    - If the user says "make the theme pastel yellow", you must identify the relevant color classes in the Tailwind CSS (like \`bg-gray-900\`, \`text-white\`, \`from-purple-600\`) and replace them with appropriate pastel yellow shades (e.g., \`bg-yellow-50\`, \`text-yellow-900\`, \`from-yellow-400\`), while keeping the entire HTML structure and layout perfectly intact.
+    - If the user says "add a contact form", you find an appropriate place in the document (like before the footer) and insert the HTML for a contact form, leaving the rest of the code untouched.
+* Preserve all existing element IDs, classes, and attributes unless the user's request requires changing them.
+* Your output must always be the **complete, updated HTML file**, even if you only changed one line. This ensures the user's preview is always in sync.
 
-[NEW] Chimera Engine Synthesis Logic:
+[Chimera Engine Synthesis Logic]
 * You may be given a user prompt that references multiple source HTML documents (labeled "Source Code 1", "Source Code 2", etc.).
 * Your task is to act as a master design synthesizer. You must parse the user's request to identify which components (e.g., "hero section," "navigation bar," "project grid") to take from which source.
 * You must also identify requests for stylistic fusion (e.g., "use the color palette and fonts from Source 3").
@@ -232,8 +241,9 @@ Code Output Format:
 Interaction Protocol [CRITICAL]:
 * When a user requests a standard visual change, your ONLY output will be the complete, updated HTML code, enclosed in a single markdown block: \`\`\`html ... \`\`\`.
 * When a user requests a full project export, your ONLY output will be the three-part structured response as defined in the Code Output Format section.
-* There must be NO conversational text or any other characters outside of these specified code outputs.
+* There must be NO conversational text or any other characters outside of these specified code outputs for visual changes. For functional or conversational responses, you can respond naturally.
 `;
+
 
 const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -267,7 +277,7 @@ async function summarizeProject(htmlContent) {
     if (!htmlContent) return null;
     try {
         const summarizerPrompt = `
-            You are an expert code analyst. Analyze the following HTML code and provide a one-sentence design summary and a JSON array of the main semantic components (like 'hero', 'gallery', 'footer', 'contact-form'). 
+            You are an expert code analyst. Analyze the following HTML code and provide a one-sentence design summary and a JSON array of the main semantic components (like 'hero', 'gallery', 'footer', 'contact-form').
             Your response MUST be ONLY a single, valid JSON object with keys "design_summary" and "component_list". Do not include any other text or markdown.
             Example: {"design_summary": "A clean, modern landing page for a SaaS product with a dark theme.", "component_list": ["navbar", "hero", "features", "pricing", "footer"]}
         `;
@@ -297,7 +307,7 @@ async function getDynamicEnhancements(templateType) {
         };
 
         const makeApiCall = (prompt, max_tokens = 20) => openai.chat.completions.create({ model: 'gpt-4o', messages: [{role: 'user', content: prompt}], temperature: 0.8, max_tokens });
-        
+
         switch(templateType) {
             case 'WEBSITE':
                 enhancements.headline = (await makeApiCall(prompts.WEBSITE)).choices[0].message.content;
@@ -334,7 +344,7 @@ async function processAndSaveCode(projectId, htmlContent, marketingRules) {
         }
         finalHtml = $.html();
     }
-    
+
     const summary = await summarizeProject(finalHtml);
     try {
         const updatePayload = { latest_code: finalHtml };
@@ -356,11 +366,12 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { history, prompt, imageBase64, userPlan, userId, projectId } = req.body;
-        
-        let currentCode = null;
+        const { history, prompt, imageBase64, userPlan, userId, projectId, currentCode: codeFromRequest } = req.body;
+
+        let currentCode = codeFromRequest;
         let marketingRules = [];
-        if (projectId && prompt !== `Initialize with ${prompt.split(' ')[2]} template.`) {
+
+        if (projectId && !currentCode) {
             const { data: projectData } = await supabaseAdmin
                 .from('projects')
                 .select('latest_code, live_marketing_rules(target_element_id, is_enabled)')
@@ -371,7 +382,7 @@ export default async function handler(req, res) {
                 marketingRules = projectData.live_marketing_rules.filter(r => r.is_enabled);
             }
         }
-        
+
         const formattedHistory = (history && Array.isArray(history)) ? history.map(msg => ({
             role: msg.from === 'ai' ? 'assistant' : 'user',
             content: msg.text || ""
@@ -385,22 +396,22 @@ export default async function handler(req, res) {
             if (baseTemplates[templateType]) {
                 let template = baseTemplates[templateType];
                 const enhancements = await getDynamicEnhancements(templateType);
-                
+
                 if (enhancements.headline) template = template.replace(/\[HEADLINE\]/g, enhancements.headline);
                 if (enhancements.name) template = template.replace(/\[NAME\]/g, enhancements.name);
                 if (enhancements.title) template = template.replace(/\[TITLE\]/g, enhancements.title);
                 if (enhancements.promo) template = template.replace(/\[PROMOTION_HEADLINE\]/g, enhancements.promo);
                 if (enhancements.blogName) template = template.replace(/\[BLOG_NAME\]/g, enhancements.blogName);
                 if (enhancements.botName) template = template.replace(/\[ASSISTANT_NAME\]/g, enhancements.botName);
-                
+
                 await processAndSaveCode(projectId, template, marketingRules);
                 const responseData = { type: 'visual', data: `I've generated a new ${templateType.toLowerCase()} template for you. Here is a great starting point!\n\n\`\`\`html\n${template}\n\`\`\`` };
                 return res.status(200).json(responseData);
             }
         }
-        
+
         const finalSystemPrompt = `${ZOLTRAK_SYSTEM_PROMPT}\n\nCURRENT_USER_PLAN: ${userPlan || 'Free'}`;
-        
+
         const userMessageContent = [];
         if (currentCode) {
             userMessageContent.push({ type: 'text', text: `Here is the current code of the website I am working on:\n\`\`\`html\n${currentCode}\n\`\`\`` });
@@ -410,7 +421,7 @@ export default async function handler(req, res) {
         if (imageBase64) {
             userMessageContent.unshift({ type: 'image_url', image_url: { url: imageBase64 } });
         }
-        
+
         const messages = [
             { role: 'system', content: finalSystemPrompt },
             ...formattedHistory.slice(-10),
@@ -437,16 +448,17 @@ export default async function handler(req, res) {
             zip.file('script.js', jsContent);
             const zipAsBase64 = await zip.generateAsync({ type: 'base64' });
 
-            return res.status(200).json({ 
-                type: 'project_zip', 
+            return res.status(200).json({
+                type: 'project_zip',
                 zip: zipAsBase64,
                 files: { html: finalHtml, css: cssContent, js: jsContent }
             });
-            
+
         } else if (responseContent.includes('```html')) {
             const visualHtml = responseContent.match(/```html([\s\S]*?)```/)?.[1].trim() || "";
             const finalHtml = await processAndSaveCode(projectId, visualHtml, marketingRules);
-            const finalResponseData = responseContent.replace(visualHtml, finalHtml);
+            const conversationalText = responseContent.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
+            const finalResponseData = `${conversationalText}\n\n\`\`\`html\n${finalHtml}\n\`\`\``;
             return res.status(200).json({ type: 'visual', data: finalResponseData });
 
         } else {
@@ -455,10 +467,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('CRITICAL Error in generate API:', error);
-        return res.status(500).json({ 
-            error: 'A server error occurred while communicating with the AI.', 
+        return res.status(500).json({
+            error: 'A server error occurred while communicating with the AI.',
             details: error.message,
-            code: 'FUNCTION_INVOCATION_FAILED' 
+            code: 'FUNCTION_INVOCATION_FAILED'
         });
     }
 }

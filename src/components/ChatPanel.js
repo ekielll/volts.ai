@@ -1,7 +1,13 @@
 // /src/components/ChatPanel.js
 
-import React, { useRef, useEffect } from 'react';
-import { Paperclip, ImageIcon } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Paperclip, ImageIcon, Zap, BrainCircuit, Paintbrush } from 'lucide-react';
+
+const thinkingMessages = [
+    { icon: <Zap className="w-5 h-5 text-yellow-400" />, text: "Zoltrak is powering up..." },
+    { icon: <BrainCircuit className="w-5 h-5 text-purple-400" />, text: "The Architect is designing your layout..." },
+    { icon: <Paintbrush className="w-5 h-5 text-blue-400" />, text: "The Designer is choosing a color palette..." },
+];
 
 const ChatPanel = ({
     chatHistory,
@@ -18,20 +24,33 @@ const ChatPanel = ({
     fileInputRef
 }) => {
     const chatEndRef = useRef(null);
-    const scrollToBottom = () => {
+    const [currentThinkingMessage, setCurrentThinkingMessage] = useState(thinkingMessages[0]);
+
+    useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-    useEffect(scrollToBottom, [chatHistory, isLoading]);
+    }, [chatHistory, isLoading]);
+
+    useEffect(() => {
+        let interval;
+        if (isLoading) {
+            let index = 0;
+            interval = setInterval(() => {
+                index = (index + 1) % thinkingMessages.length;
+                setCurrentThinkingMessage(thinkingMessages[index]);
+            }, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [isLoading]);
 
     return (
         <div className="w-full h-full bg-black/10 p-4 flex flex-col border-r border-white/10">
             <h2 className="text-lg font-bold mb-4 text-white font-premium flex-shrink-0">Chat with Zoltrak</h2>
-            <div className="flex-grow overflow-y-auto pr-2 space-y-4">
+            <div className="flex-grow overflow-y-auto pr-2 space-y-3">
                 {chatHistory.map((msg, index) => (
                     <div key={index} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md ${msg.from === 'user' ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-700/80 text-gray-200 rounded-bl-none'}`}>
+                        <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl shadow-md ${msg.from === 'user' ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-700/80 text-gray-200 rounded-bl-none'}`}>
                             {msg.image && <img src={msg.image} alt="upload-preview" className="rounded-lg mb-2 max-h-40" />}
-                            {msg.text}
+                            <p className="text-sm leading-relaxed">{msg.text}</p>
                         </div>
                     </div>
                 ))}
@@ -55,11 +74,14 @@ const ChatPanel = ({
                 {isLoading && (
                     <div className="flex justify-start">
                         <div className="bg-gray-700/80 text-gray-200 rounded-2xl rounded-bl-none p-3 text-center">
-                            <p className="text-sm font-premium text-purple-300 mb-2">Zoltrak is thinking...</p>
+                            <div className="flex items-center gap-2 text-sm font-premium text-purple-300 mb-2">
+                                {currentThinkingMessage.icon}
+                                <p>{currentThinkingMessage.text}</p>
+                            </div>
                             <div className="typing-indicator">
-                                <span className="w-2 h-2 bg-purple-400 rounded-full inline-block"></span>
-                                <span className="w-2 h-2 bg-purple-400 rounded-full inline-block"></span>
-                                <span className="w-2 h-2 bg-purple-400 rounded-full inline-block"></span>
+                                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
+                                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
+                                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
                             </div>
                         </div>
                     </div>

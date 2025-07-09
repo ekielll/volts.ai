@@ -6,6 +6,8 @@ import { supabase } from '../supabaseClient';
 import { useProjectContext } from '../ProjectContext';
 import ChatPanel from './ChatPanel';
 import PreviewPanel from './PreviewPanel';
+import * as cheerio from 'cheerio';
+import { X, Link, CornerDownLeft } from 'lucide-react';
 
 const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profile, project }) => {
     // --- CONTEXT STATE ---
@@ -13,10 +15,10 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         activeProject,
         addMessageToHistory,
         updateActiveProject,
-        updatePreviewCode // Restored for instant client-side template loading
+        updatePreviewCode
     } = useProjectContext();
 
-    // --- RESTORED ORIGINAL TEMPLATES ---
+    // --- TEMPLATES ---
     const initialWebsitePreview = `
         <!DOCTYPE html>
         <html lang="en" class="scroll-smooth">
@@ -33,10 +35,10 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                 <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div id="logo" class="font-bold text-xl">YourLogo</div>
                     <ul class="flex gap-8">
-                        <li><a href="#hero" class="hover:text-purple-400 transition-colors">Home</a></li>
-                        <li><a href="#services" class="hover:text-purple-400 transition-colors">Services</a></li>
-                        <li><a href="#about" class="hover:text-purple-400 transition-colors">About</a></li>
-                        <li><a href="#contact" class="hover:text-purple-400 transition-colors">Contact</a></li>
+                        <li><a href="#hero" id="nav-home" class="hover:text-purple-400 transition-colors">Home</a></li>
+                        <li><a href="#services" id="nav-services" class="hover:text-purple-400 transition-colors">Services</a></li>
+                        <li><a href="#about" id="nav-about" class="hover:text-purple-400 transition-colors">About</a></li>
+                        <li><a href="#contact" id="nav-contact" class="hover:text-purple-400 transition-colors">Contact</a></li>
                     </ul>
                 </div>
             </nav>
@@ -315,7 +317,6 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         </body>
         </html>`;
 
-
     // --- LOCAL UI STATE ---
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -328,11 +329,21 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     const [isSubmittingRule, setIsSubmittingRule] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [showInitialButtons, setShowInitialButtons] = useState(true);
+    const [pageSections, setPageSections] = useState([]);
+    const [previewMode, setPreviewMode] = useState('desktop');
+
+    const [copilotModal, setCopilotModal] = useState({
+        isOpen: false,
+        mode: null,
+        element: null,
+        inputValue: ''
+    });
 
     // --- REFS ---
     const fileInputRef = useRef(null);
     const iframeRef = useRef(null);
 
+    // --- EFFECTS ---
     useEffect(() => {
         if (activeProject && activeProject.interactionCount > 0) {
             setShowInitialButtons(false);
@@ -350,28 +361,97 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         };
         fetchRules();
     }, [project]);
+    
+    useEffect(() => {
+        if (activeProject?.previewCode) {
+            const $ = cheerio.load(activeProject.previewCode);
+            const sections = [];
+            $('section[id], header[id], footer[id]').each((i, el) => {
+                sections.push($(el).attr('id'));
+            });
+            setPageSections(sections);
+        }
+    }, [activeProject?.previewCode]);
+
 
     const handleIframeLoad = () => {
         const iframe = iframeRef.current;
         if (!iframe) return;
         const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+        
         const handleClick = (e) => {
-            const supportedTags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'DIV'];
             const target = e.target;
-            if (supportedTags.includes(target.tagName) && target.innerText) {
-                e.preventDefault(); e.stopPropagation();
-                if (!target.id) { setSelectedElement(null); return; }
-                setSelectedElement({ id: target.id, tagName: target.tagName, content: target.innerText });
-            } else { setSelectedElement(null); }
+            
+            if (target.closest('.visual-copilot-menu')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+
+            const supportedTags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'DIV'];
+
+            if (target && target.id) {
+                 if (target.tagName === 'A') {
+                    setCopilotModal({
+                        isOpen: true,
+                        mode: 'edit-link',
+                        element: { id: target.id, tagName: target.tagName, currentHref: target.getAttribute('href') },
+                        inputValue: target.getAttribute('href') || ''
+                    });
+                } else if (supportedTags.includes(target.tagName)) {
+                    setSelectedElement({ id: target.id, tagName: target.tagName, content: target.innerText });
+                }
+            } else {
+                setSelectedElement(null);
+            }
         };
-        iframeDocument.body.addEventListener('click', handleClick);
-        return () => { iframeDocument.body.removeEventListener('click', handleClick); };
+
+        iframeDocument.body.addEventListener('click', handleClick, true);
+        return () => { iframeDocument.body.removeEventListener('click', handleClick, true); };
     };
 
-    const handleToggleLiveMarketing = async () => {
-        if (!selectedElement || !project || !profile || isSubmittingRule) return;
+    const handleOpenVisualCopilot = (mode, element) => {
+        setSelectedElement(null);
+        setCopilotModal({
+            isOpen: true,
+            mode: mode,
+            element: element,
+            inputValue: mode === 'edit-text' ? element.content : `For the <${element.tagName.toLowerCase()}> element with the id "${element.id}", `
+        });
+    };
+
+    const handleCloseVisualCopilot = () => {
+        setCopilotModal({ isOpen: false, mode: null, element: null, inputValue: '' });
+    };
+
+    const handleCopilotSubmit = () => {
+        const { mode, element, inputValue } = copilotModal;
+        if (mode === 'edit-text') {
+            const $ = cheerio.load(activeProject.previewCode, { xmlMode: false });
+            $(`#${element.id}`).text(inputValue);
+            const updatedCode = $.html();
+            updatePreviewCode(updatedCode);
+            if (onNewMessage) onNewMessage();
+        } else if (mode === 'ask-zoltrak') {
+            handleSendMessage(null, inputValue);
+        }
+        handleCloseVisualCopilot();
+    };
+    
+    const handleLinkToSection = (newHref) => {
+        const { element } = copilotModal;
+        const $ = cheerio.load(activeProject.previewCode, { xmlMode: false });
+        $(`#${element.id}`).attr('href', newHref);
+        updatePreviewCode($.html());
+        if (onNewMessage) onNewMessage();
+        handleCloseVisualCopilot();
+    };
+
+    const handleToggleLiveMarketing = async (element) => {
+        if (!element || !project || !profile || isSubmittingRule) return;
         setIsSubmittingRule(true);
-        const { id: target_element_id, content: original_content } = selectedElement;
+        const { id: target_element_id, content: original_content } = element;
         const existingRule = liveMarketingRules.find(r => r.target_element_id === target_element_id);
         const newStatus = existingRule ? !existingRule.is_enabled : true;
         try {
@@ -380,34 +460,41 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             if (existingRule) { setLiveMarketingRules(rules => rules.map(r => r.target_element_id === target_element_id ? { ...r, is_enabled: newStatus } : r)); }
             else { setLiveMarketingRules(rules => [...rules, { target_element_id, is_enabled: true }]); }
         } catch (error) {
-            console.error("Error updating marketing rule:", error);
-            alert(`Error: Could not update the marketing rule. ${error.message}`);
+            alert(`Error: ${error.message}`);
         } finally {
             setIsSubmittingRule(false);
             setSelectedElement(null);
         }
     };
-
+    
     const handleSendMessage = async (e, promptOverride) => {
         if (e) e.preventDefault();
         const currentInput = promptOverride || input;
         if ((!currentInput.trim() && !uploadedImage) || isLoading) return;
 
-        addMessageToHistory({ from: 'user', text: currentInput, image: uploadedImage });
-        const currentUploadedImage = uploadedImage;
-        setInput(''); setUploadedImage(null); setIsLoading(true);
-        setShowInitialButtons(false); setSuggestions([]); setSelectedElement(null);
+        const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
+        const newHistoryForAPI = [...activeProject.chatHistory, userMessage];
+
+        addMessageToHistory(userMessage);
+        setInput(''); 
+        setUploadedImage(null); 
+        setIsLoading(true);
+        setShowInitialButtons(false); 
+        setSuggestions([]); 
+        setSelectedElement(null);
 
         try {
             const response = await fetch('/api/generate', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    history: activeProject.chatHistory.map(msg => ({ from: msg.from, text: msg.text })),
+                    history: newHistoryForAPI.map(msg => ({ from: msg.from, text: msg.text })),
                     prompt: currentInput,
-                    imageBase64: currentUploadedImage,
+                    imageBase64: uploadedImage,
                     userPlan: profile?.subscription_tier || 'Free',
                     userId: profile?.id,
                     projectId: project?.id,
+                    currentCode: activeProject.previewCode
                 })
             });
 
@@ -417,42 +504,46 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             }
 
             const result = await response.json();
-            const newInteractionCount = (activeProject.interactionCount || 0) + 1;
+            
+            const aiMessage = { from: 'ai', text: "" };
+            let finalCode = activeProject.previewCode;
+            let finalHistory = newHistoryForAPI;
 
             if (result.type === 'visual') {
                 const codeMatch = result.data.match(/```html([\s\S]*?)```/);
-                const extractedCode = codeMatch ? codeMatch[1].trim() : result.data;
-                const conversationalText = result.data.replace(/```html([\s\S]*?)```/, '').trim();
-
-                updateActiveProject({
-                    interactionCount: newInteractionCount,
-                    previewCode: extractedCode,
-                    chatHistory: conversationalText ? [...activeProject.chatHistory, { from: 'ai', text: conversationalText }] : activeProject.chatHistory,
-                });
-
+                finalCode = codeMatch ? codeMatch[1].trim() : activeProject.previewCode;
+                aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
+                finalHistory = [...newHistoryForAPI, aiMessage];
             } else if (result.type === 'project_zip') {
-                setProjectFiles(result.files); setZipData(result.zip);
-                updateActiveProject({
-                    interactionCount: newInteractionCount,
-                    previewCode: result.files.html,
-                    chatHistory: [...activeProject.chatHistory, { from: 'ai', text: "I've generated the full project files for you." }]
-                });
-            } else if (result.type === 'functional') {
-                updateActiveProject({
-                    interactionCount: newInteractionCount,
-                    chatHistory: [...activeProject.chatHistory, { from: 'ai', text: result.data }]
-                });
+                finalCode = result.files.html;
+                setProjectFiles(result.files); 
+                setZipData(result.zip);
+                aiMessage.text = "I've generated the full project files for you.";
+                finalHistory = [...newHistoryForAPI, aiMessage];
+            } else {
+                aiMessage.text = result.data;
+                finalHistory = [...newHistoryForAPI, aiMessage];
+            }
+            
+            if (result.suggestions) {
+                setSuggestions(result.suggestions);
             }
 
-            if (result.suggestions && newInteractionCount <= 3) { setSuggestions(result.suggestions); }
-            if (onNewMessage) { onNewMessage(); }
+            updateActiveProject({
+                previewCode: finalCode,
+                chatHistory: finalHistory,
+                interactionCount: finalHistory.length,
+            });
+
+            if (onNewMessage) onNewMessage();
 
         } catch (error) {
-            console.error("Error fetching from generate API:", error);
             addMessageToHistory({ from: 'ai', text: `An error occurred: ${error.message}` });
-        } finally { setIsLoading(false); }
+        } finally {
+            setIsLoading(false);
+        }
     };
-
+    
     const handleDownloadZip = () => {
         if (!zipData) return;
         const link = document.createElement('a');
@@ -475,17 +566,16 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         else if (lowerReply === 'chatbot') newPreview = initialChatbotPreview;
 
         if (newPreview) {
-            // Instantly update the UI
             updatePreviewCode(newPreview);
-            addMessageToHistory({ from: 'ai', text: `Here is a standard ${reply} to get you started. What would you like to change?` });
+            addMessageToHistory({ from: 'ai', text: `Here is a standard ${reply} template to get you started. What would you like to change?` });
             updateActiveProject({ interactionCount: (activeProject.interactionCount || 0) + 1 });
             
-            // Silently save the initial code to the database in the background
             try {
-                await supabase.from('projects').update({ latest_code: newPreview }).eq('id', project.id);
+                if(project?.id) {
+                    await supabase.from('projects').update({ latest_code: newPreview }).eq('id', project.id);
+                }
             } catch (error) {
                 console.error("Error saving initial template to DB:", error);
-                // This is a background task, so we don't show an error to the user
             }
         }
     };
@@ -503,8 +593,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
 
     const containerClasses = isFullScreen ? "w-full h-full bg-[#1a202c]/80 backdrop-blur-xl shadow-2xl border border-white/10 rounded-xl overflow-hidden" : `w-full bg-[#1a202c]/80 backdrop-blur-xl shadow-2xl border border-white/10 ${isDemo ? 'rounded-xl overflow-hidden' : ''}`;
     const containerHeight = isDemo ? 'h-[90vh]' : 'h-full';
-    const isRuleEnabled = selectedElement ? liveMarketingRules.find(r => r.target_element_id === selectedElement.id)?.is_enabled : false;
-
+    
     if (!activeProject) { return null; }
 
     return (
@@ -537,13 +626,83 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                             iframeRef={iframeRef}
                             handleIframeLoad={handleIframeLoad}
                             selectedElement={selectedElement}
-                            isRuleEnabled={isRuleEnabled}
-                            handleToggleLiveMarketing={handleToggleLiveMarketing}
+                            handleToggleLiveMarketing={() => handleToggleLiveMarketing(selectedElement)}
                             isSubmittingRule={isSubmittingRule}
+                            onOpenVisualCopilot={handleOpenVisualCopilot}
+                            getRuleStatus={(elementId) => liveMarketingRules.find(r => r.target_element_id === elementId)?.is_enabled}
+                            previewMode={previewMode}
+                            setPreviewMode={setPreviewMode}
                         />
                     </Panel>
                 </PanelGroup>
             </div>
+            
+            {copilotModal.isOpen && copilotModal.mode !== 'edit-link' && (
+                 <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="glass-card rounded-xl w-full max-w-lg flex flex-col relative bg-[#1F2937]/80 p-6">
+                        <button onClick={handleCloseVisualCopilot} className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white">
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-lg font-bold font-premium mb-4">
+                            {copilotModal.mode === 'edit-text' ? 'Edit Text Content' : 'Ask Zoltrak'}
+                        </h3>
+                        <textarea
+                            value={copilotModal.inputValue}
+                            onChange={(e) => setCopilotModal(prev => ({ ...prev, inputValue: e.target.value }))}
+                            placeholder={copilotModal.mode === 'edit-text' ? 'Enter new text...' : `e.g., "Make this text larger and blue"`}
+                            className="w-full p-3 mb-4 bg-gray-900/50 border-2 border-white/20 rounded-lg focus:outline-none focus:border-purple-500 transition-colors h-28"
+                            autoFocus
+                        />
+                        <button onClick={handleCopilotSubmit} className="w-full premium-button text-white font-bold py-2 rounded-lg">
+                            {copilotModal.mode === 'edit-text' ? 'Update Text' : 'Send to Zoltrak'}
+                        </button>
+                    </div>
+                </div>
+            )}
+            
+            {copilotModal.isOpen && copilotModal.mode === 'edit-link' && (
+                 <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="glass-card rounded-xl w-full max-w-lg flex flex-col relative bg-[#1F2937]/80 p-6">
+                        <button onClick={handleCloseVisualCopilot} className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white">
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-lg font-bold font-premium mb-4 flex items-center gap-2"><Link size={20}/> Edit Link Destination</h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                            Current Target: <code className="bg-gray-900/50 py-1 px-2 rounded">{copilotModal.element.currentHref || 'None'}</code>
+                        </p>
+                        <div className="space-y-3">
+                            <p className="font-semibold text-gray-200">Link to a section on this page:</p>
+                            <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                                {pageSections.map(id => (
+                                    <button key={id} onClick={() => handleLinkToSection(`#${id}`)} className="w-full text-left p-3 rounded-lg bg-gray-900/50 hover:bg-purple-600/50 flex items-center justify-between transition-colors">
+                                        <span>#{id}</span>
+                                        <CornerDownLeft size={16} />
+                                    </button>
+                                ))}
+                                {pageSections.length === 0 && <p className="text-xs text-gray-500 text-center py-4">No sections with IDs found on this page.</p>}
+                            </div>
+                        </div>
+                        <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700" /></div>
+                            <div className="relative flex justify-center text-sm"><span className="bg-[#1F2937] px-2 text-gray-500 font-premium">OR</span></div>
+                        </div>
+                        <div>
+                            <p className="font-semibold text-gray-200 mb-2">Link to a new page or external URL:</p>
+                             <input 
+                                type="text"
+                                value={copilotModal.inputValue}
+                                onChange={(e) => setCopilotModal(prev => ({...prev, inputValue: e.target.value}))}
+                                placeholder="https://example.com or /about.html"
+                                className="w-full p-2 bg-gray-900/50 border-2 border-white/20 rounded-lg focus:outline-none focus:border-purple-500"
+                            />
+                        </div>
+                         <button onClick={() => handleLinkToSection(copilotModal.inputValue)} className="w-full premium-button text-white font-bold py-2 rounded-lg mt-6">
+                            Update Link
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {isPreviewFullScreen && (
                 <div className="fixed inset-0 bg-gray-900 z-[100] flex flex-col p-4">
                     <div className="flex justify-end mb-4"><button onClick={() => setIsPreviewFullScreen(false)} className="premium-button text-white font-bold py-2 px-5 rounded-lg">Close</button></div>
