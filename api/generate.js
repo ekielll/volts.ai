@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import JSZip from 'jszip';
 import * as cheerio from 'cheerio';
-import { baseTemplates } from '../lib/baseModels'; // Import the base templates
+import { baseTemplates } from './baseModels.js'; // Corrected import path
 
 // FULLY RESTORED AND UPGRADED PROMPT
 const ZOLTRAK_SYSTEM_PROMPT = `
@@ -35,9 +35,9 @@ Core Directives:
 6.  Whenever you've completed the user's request, make sure to restate what you've done in a natural, conversational way rather than just saying 'I've done what you requested.' Ensure the restatement reflects the essence of the task you completed, showing an understanding of the request.
 7.  Maintain Professional Boundaries:
     * Your expertise is in generating code for your defined areas of mastery. If a user asks for something outside this scope (e.g., a native mobile app), politely decline while offering a powerful alternative within your expertise.
+    * For user privacy and security, you cannot access external websites, links, or the user's private files. If asked, you must state this limitation clearly. Example: "For your security, I cannot access links or local files. You can describe the content or paste the text you'd like me to work with."
     * Within these boundaries, your creative and technical capabilities are vast. Strive to deliver a solution for every request.
-8.  **Proactive Collaboration:** After successfully completing a user's request, analyze the change and the surrounding code to anticipate the user's next logical move. Offer 2-3 concise, relevant suggestions as quick-reply buttons to guide the user and streamline their workflow. For example, if the user changes a headline, you might suggest, "I've updated the headline. Would you like me to rewrite the sub-headline to match?" or "Should I adjust the call-to-action button text?" Your response should include a special section for these suggestions, formatted like this:
-
+8.  **Proactive Collaboration:** After successfully completing a user's request, analyze the change and the surrounding code to anticipate the user's next logical move. Offer 2-3 concise, relevant suggestions as quick-reply buttons to guide the user and streamline their workflow. Format your response with a special section like this:
 ---[suggestions]---
 ["Suggestion 1", "Suggestion 2", "Suggestion 3"]
 
@@ -51,7 +51,7 @@ World-Class Design Philosophy:
 
 Tier-Specific Behavior (Upselling):
 * You will be informed of the user's current plan ('Free', 'Volt', 'Surge', 'Grid'). You must enforce feature limitations on lower tiers by offering powerful alternatives.
-* Example: If a Free user asks, "Use my company's document to write the about page," respond: "Using custom documents is part of our Custom Knowledge Base, a feature available on the Surge and Grid plans. As an alternative, I can help you write a compelling 'About Us' page from scratch right now. What are the key points you'd like to include?"
+* Example: If a Free user asks, "Use my company's document to write the about page," respond: "Using custom documents is part of our Custom Knowledge Base, a feature available on the Surge and Grid plans. As an alternative, I can help you write a compelling 'About Us' page from scratch. What are the key points you'd like to include?"
 
 Managing Complex Requests:
 * If a user's request is very broad (e.g., "build a complete e-commerce site"), do not attempt to generate it all in one response.
@@ -90,20 +90,6 @@ Interaction Protocol [CRITICAL]:
 
 const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const responseContent = completion.choices[0].message.content;
-let suggestions = [];
-
-if (responseContent.includes('---[suggestions]---')) {
-    const suggestionsMatch = responseContent.match(/---[suggestions]---\s*(\[.*\])/);
-    if (suggestionsMatch && suggestionsMatch[1]) {
-        try {
-            suggestions = JSON.parse(suggestionsMatch[1]);
-        } catch (e) {
-            console.error("Error parsing suggestions:", e);
-        }
-    }
-}
 
 const liveMarketingScript = `
 (function() {
@@ -227,8 +213,20 @@ export default async function handler(req, res) {
 
         let currentCode = codeFromRequest;
         let marketingRules = [];
+        let completion;
 
-        // NEW: Handle Chimera Engine Synthesis Request
+        if (projectId && !currentCode) {
+            const { data: projectData } = await supabaseAdmin
+                .from('projects')
+                .select('latest_code, live_marketing_rules(target_element_id, is_enabled)')
+                .eq('id', projectId)
+                .single();
+            if (projectData) {
+                currentCode = projectData.latest_code;
+                marketingRules = projectData.live_marketing_rules.filter(r => r.is_enabled);
+            }
+        }
+
         if (synthesis_request) {
             const { components, prompt: synthesisPrompt } = synthesis_request;
             let sourceCodesString = '';
@@ -244,75 +242,74 @@ export default async function handler(req, res) {
 
             const synthesisSystemPrompt = `${ZOLTRAK_SYSTEM_PROMPT}\n\nThe user wants to synthesize a new website from multiple sources. Their instruction is: "${synthesisPrompt}".\n\nHere are the source codes:\n${sourceCodesString}`;
 
-            const completion = await openai.chat.completions.create({
+            completion = await openai.chat.completions.create({
                 model: 'gpt-4o',
                 messages: [{ role: 'system', content: synthesisSystemPrompt }]
             });
+        } else {
+            const formattedHistory = (history || []).map(msg => ({
+                role: msg.from === 'ai' ? 'assistant' : 'user',
+                content: msg.text || ""
+            }));
 
-            const responseContent = completion.choices[0].message.content;
-            return res.status(200).json({ type: 'visual', data: responseContent });
-        }
+            const templateRegex = /Generate a new '(\w+)' project|Initialize with (\w+) template|Create a (\w+) for me/i;
+            const match = prompt && prompt.match(templateRegex);
 
+            if (match && (!history || history.length <= 1)) {
+                const templateType = (match[1] || match[2] || match[3]).toUpperCase();
+                if (baseTemplates[templateType]) {
+                    let template = baseTemplates[templateType];
+                    const enhancements = await getDynamicEnhancements(templateType);
 
-        if (projectId && !currentCode) {
-            const { data: projectData } = await supabaseAdmin
-                .from('projects')
-                .select('latest_code, live_marketing_rules(target_element_id, is_enabled)')
-                .eq('id', projectId)
-                .single();
-            if (projectData) {
-                currentCode = projectData.latest_code;
-                marketingRules = projectData.live_marketing_rules.filter(r => r.is_enabled);
+                    if (enhancements.headline) template = template.replace(/\[HEADLINE\]/g, enhancements.headline);
+                    if (enhancements.name) template = template.replace(/\[NAME\]/g, enhancements.name);
+                    if (enhancements.title) template = template.replace(/\[TITLE\]/g, enhancements.title);
+                    if (enhancements.promo) template = template.replace(/\[PROMOTION_HEADLINE\]/g, enhancements.promo);
+                    if (enhancements.blogName) template = template.replace(/\[BLOG_NAME\]/g, enhancements.blogName);
+                    if (enhancements.botName) template = template.replace(/\[ASSISTANT_NAME\]/g, enhancements.botName);
+                    
+                    const finalHtml = await processAndSaveCode(projectId, template, marketingRules);
+                    const conversationalText = `I've generated a new ${templateType.toLowerCase()} template for you. Here is a great starting point!`;
+                    const finalResponseData = `${conversationalText}\n\n\`\`\`html\n${finalHtml}\n\`\`\``;
+            
+                    return res.status(200).json({ type: 'visual', data: finalResponseData });
+                }
             }
-        }
 
-        const formattedHistory = (history && Array.isArray(history)) ? history.map(msg => ({
-            role: msg.from === 'ai' ? 'assistant' : 'user',
-            content: msg.text || ""
-        })) : [];
+            const finalSystemPrompt = `${ZOLTRAK_SYSTEM_PROMPT}\n\nCURRENT_USER_PLAN: ${userPlan || 'Free'}`;
+            const userMessageContent = [];
 
-        const templateRegex = /Generate a new '(\w+)' project|Initialize with (\w+) template/i;
-        const match = prompt && prompt.match(templateRegex);
-
-        if (match) {
-            const templateType = (match[1] || match[2]).toUpperCase();
-            if (baseTemplates[templateType]) {
-                let template = baseTemplates[templateType];
-                const enhancements = await getDynamicEnhancements(templateType);
-
-                if (enhancements.headline) template = template.replace(/\[HEADLINE\]/g, enhancements.headline);
-                if (enhancements.name) template = template.replace(/\[NAME\]/g, enhancements.name);
-                if (enhancements.title) template = template.replace(/\[TITLE\]/g, enhancements.title);
-                if (enhancements.promo) template = template.replace(/\[PROMOTION_HEADLINE\]/g, enhancements.promo);
-                if (enhancements.blogName) template = template.replace(/\[BLOG_NAME\]/g, enhancements.blogName);
-                if (enhancements.botName) template = template.replace(/\[ASSISTANT_NAME\]/g, enhancements.botName);
-
-                await processAndSaveCode(projectId, template, marketingRules);
-                const responseData = { type: 'visual', data: `I've generated a new ${templateType.toLowerCase()} template for you. Here is a great starting point!\n\n\`\`\`html\n${template}\n\`\`\`` };
-                return res.status(200).json(responseData);
+            if (currentCode) {
+                userMessageContent.push({ type: 'text', text: `Here is the current code of the website I am working on:\n\`\`\`html\n${currentCode}\n\`\`\`` });
             }
+            userMessageContent.push({ type: 'text', text: `My request is: "${prompt}"` });
+
+            if (imageBase64) {
+                userMessageContent.unshift({ type: 'image_url', image_url: { url: imageBase64 } });
+            }
+
+            const messages = [
+                { role: 'system', content: finalSystemPrompt },
+                ...formattedHistory.slice(-10),
+                { role: 'user', content: userMessageContent }
+            ];
+
+            completion = await openai.chat.completions.create({ model: 'gpt-4o', messages: messages });
         }
-
-        const finalSystemPrompt = `${ZOLTRAK_SYSTEM_PROMPT}\n\nCURRENT_USER_PLAN: ${userPlan || 'Free'}`;
-
-        const userMessageContent = [];
-        if (currentCode) {
-            userMessageContent.push({ type: 'text', text: `Here is the current code of the website I am working on:\n\`\`\`html\n${currentCode}\n\`\`\`` });
-        }
-        userMessageContent.push({ type: 'text', text: `My request is: "${prompt}"` });
-
-        if (imageBase64) {
-            userMessageContent.unshift({ type: 'image_url', image_url: { url: imageBase64 } });
-        }
-
-        const messages = [
-            { role: 'system', content: finalSystemPrompt },
-            ...formattedHistory.slice(-10),
-            { role: 'user', content: userMessageContent }
-        ];
-
-        const completion = await openai.chat.completions.create({ model: 'gpt-4o', messages: messages });
+        
         const responseContent = completion.choices[0].message.content;
+        let suggestions = [];
+
+        if (responseContent.includes('---[suggestions]---')) {
+            const suggestionsMatch = responseContent.match(/---[suggestions]---\s*(\[.*\])/s);
+            if (suggestionsMatch && suggestionsMatch[1]) {
+                try {
+                    suggestions = JSON.parse(suggestionsMatch[1]);
+                } catch (e) {
+                    console.error("Error parsing suggestions:", e);
+                }
+            }
+        }
 
         if (userId) {
             await supabaseAdmin.rpc('increment_interaction_count', { user_id_input: userId });
@@ -322,9 +319,7 @@ export default async function handler(req, res) {
             let htmlContent = responseContent.split('---[index.html]---')[1].split('---[style.css]---')[0].trim();
             const cssContent = responseContent.split('---[style.css]---')[1].split('---[script.js]---')[0].trim();
             const jsContent = responseContent.split('---[script.js]---')[1].trim();
-
             const finalHtml = await processAndSaveCode(projectId, htmlContent, marketingRules);
-
             const zip = new JSZip();
             zip.file('index.html', finalHtml);
             zip.file('style.css', cssContent);
@@ -334,7 +329,8 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 type: 'project_zip',
                 zip: zipAsBase64,
-                files: { html: finalHtml, css: cssContent, js: jsContent }
+                files: { html: finalHtml, css: cssContent, js: jsContent },
+                suggestions: suggestions
             });
 
         } else if (responseContent.includes('```html')) {
@@ -342,17 +338,18 @@ export default async function handler(req, res) {
             const finalHtml = await processAndSaveCode(projectId, visualHtml, marketingRules);
             const conversationalText = responseContent.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
             const finalResponseData = `${conversationalText}\n\n\`\`\`html\n${finalHtml}\n\`\`\``;
-            return res.status(200).json({
-                type: 'visual',
+            
+            return res.status(200).json({ 
+                type: 'visual', 
                 data: finalResponseData,
-                suggestions: suggestions // Add this line
+                suggestions: suggestions
             });
 
         } else {
-            return res.status(200).json({
-                type: 'functional',
+            return res.status(200).json({ 
+                type: 'functional', 
                 data: responseContent,
-                suggestions: suggestions // And also here
+                suggestions: suggestions 
             });
         }
 

@@ -1,53 +1,77 @@
-// src/components/TemplateCard.js
+// src/components/Taskbar.js
 
 import React from 'react';
-import { Eye, Check } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FolderKanban, Library, Bot, Sparkles, LogOut, Package } from 'lucide-react';
+import { useAuth } from '../AuthContext';
 
-const TemplateCard = ({ template, onComponentSelect, onPreview, selectedComponents }) => {
+const Taskbar = ({ onPremiumFeatureClick }) => {
+    const navigate = useNavigate();
+    const { signOut } = useAuth();
+
+    const handleLogout = () => {
+        signOut();
+        navigate('/');
+    };
+
+    const navItems = [
+        { to: "/dashboard", icon: <LayoutDashboard size={24} />, label: "Dashboard" },
+        { to: "/projects", icon: <FolderKanban size={24} />, label: "Projects" },
+        { to: "/templates", icon: <Package size={24} />, label: "Templates" },
+        { to: "/assets", icon: <Library size={24} />, label: "Assets" },
+        { to: "/knowledge-base", icon: <Bot size={24} />, label: "Knowledge", premium: true },
+    ];
+
+    const getNavLinkClass = ({ isActive }) =>
+        `flex items-center justify-center w-16 h-16 transition-all duration-300 ease-in-out relative group ${
+            isActive ? 'text-white' : 'text-gray-500 hover:text-white'
+        }`;
+
     return (
-        <div className="group relative rounded-xl overflow-hidden glass-card border border-white/10 flex flex-col">
-            <div className="relative aspect-[3/4]">
-                <img src={`/template-previews/${template.name.toLowerCase()}.jpg`} alt={template.name} className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col justify-end p-6">
-                    <h3 className="text-2xl font-bold font-premium text-white">{template.name}</h3>
-                    <p className="text-gray-300">{template.description}</p>
-                </div>
-                 <div className="absolute top-4 right-4 flex gap-2">
-                    <button 
-                        onClick={() => onPreview(template)}
-                        className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-lg text-white font-bold rounded-full hover:bg-white/30 transition-colors"
-                        title="Preview"
+        <aside className="fixed top-0 left-0 h-screen w-20 bg-gray-900/50 backdrop-blur-lg border-r border-white/10 flex flex-col items-center justify-between py-6 z-40">
+            <div className="flex flex-col items-center gap-2">
+                <img
+                    src="/logo.png"
+                    alt="Volts Logo"
+                    className="h-12 w-auto mb-6 cursor-pointer"
+                    onClick={() => navigate('/dashboard')}
+                />
+                {navItems.map((item) => (
+                    <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={getNavLinkClass}
+                        onClick={(e) => {
+                            if (item.premium && onPremiumFeatureClick) {
+                                e.preventDefault();
+                                onPremiumFeatureClick();
+                            }
+                        }}
                     >
-                        <Eye size={20} />
-                    </button>
-                </div>
+                        {item.icon}
+                        {item.premium && (
+                            <Sparkles className="absolute top-2 right-2 w-3.5 h-3.5 text-yellow-400" />
+                        )}
+                        <span className="absolute left-full ml-4 w-auto min-w-max px-3 py-1.5 bg-gray-800 text-white text-sm font-bold rounded-md shadow-lg scale-0 origin-left transition-transform group-hover:scale-100">
+                            {item.label}
+                        </span>
+                    </NavLink>
+                ))}
             </div>
-            
-            <div className="p-4 bg-gray-900/50">
-                <h4 className="font-bold text-sm text-gray-300 mb-3">Select Components:</h4>
-                <div className="space-y-2">
-                    {template.sections.map(section => {
-                        const key = `${template.id}-${section}`;
-                        const isSelected = !!selectedComponents[key];
-                        return (
-                             <label key={key} className="flex items-center space-x-3 p-2 rounded-md hover:bg-purple-500/10 cursor-pointer transition-colors">
-                                <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => onComponentSelect(template, section)}
-                                    className="hidden"
-                                />
-                                <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all duration-200 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-600 group-hover:border-purple-400'}`}>
-                                    {isSelected && <Check size={14} strokeWidth={3} />}
-                                </div>
-                                <span className="text-gray-300">{section}</span>
-                            </label>
-                        )
-                    })}
-                </div>
+
+            <div className="flex flex-col items-center">
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center justify-center w-16 h-16 text-gray-500 hover:text-red-500 transition-colors group relative"
+                >
+                    <LogOut size={24} />
+                    <span className="absolute left-full ml-4 w-auto px-3 py-1.5 bg-gray-800 text-white text-sm font-bold rounded-md shadow-lg scale-0 origin-left transition-transform group-hover:scale-100">
+                        Logout
+                    </span>
+                </button>
             </div>
-        </div>
+        </aside>
     );
 };
 
-export default TemplateCard;
+export default Taskbar;

@@ -532,76 +532,67 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         if (e) e.preventDefault();
         const currentInput = promptOverride || input;
         if ((!currentInput.trim() && !uploadedImage) || isLoading) return;
-        
-        const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
-        if (currentInput.includes("As a world-class UI/UX design expert")) {
-            userMessage.text = "Critique my current design.";
-        }
-        
-        const newHistoryForAPI = [...activeProject.chatHistory, { from: 'user', text: promptOverride || input, image: uploadedImage }];
 
+        const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
+        // Add user message to history immediately
         addMessageToHistory(userMessage);
-        setInput(''); 
-        setUploadedImage(null); 
+
+        const currentCode = activeProject.previewCode;
+        const historyForAPI = [...activeProject.chatHistory, userMessage].map(msg => ({ from: msg.from, text: msg.text }));
+
+        setInput('');
+        setUploadedImage(null);
         setIsLoading(true);
-        setShowInitialButtons(false); 
-        setSuggestions([]); 
+        setShowInitialButtons(false);
+        setSuggestions([]);
         setSelectedElement(null);
 
         try {
             const response = await fetch('/api/generate', {
-                method: 'POST', 
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    history: newHistoryForAPI.map(msg => ({ from: msg.from, text: msg.text })),
-                    prompt: promptOverride || input,
+                    history: historyForAPI,
+                    prompt: currentInput,
                     imageBase64: uploadedImage,
                     userPlan: profile?.subscription_tier || 'Free',
                     userId: profile?.id,
                     projectId: project?.id,
-                    currentCode: activeProject.previewCode
+                    currentCode: currentCode
                 })
             });
 
             if (!response.ok) {
-                 const errorText = await response.text();
-                 throw new Error(`Server returned an error: ${response.status} ${errorText}`);
+                const errorText = await response.text();
+                throw new Error(`Server returned an error: ${response.status} ${errorText}`);
             }
 
             const result = await response.json();
-
-            // Handle suggestions array
-            if (result.suggestions && result.suggestions.length > 0) {
-                setSuggestions(result.suggestions);
-            } else {
-                setSuggestions([]); // Clear old suggestions
-            }
-
             const aiMessage = { from: 'ai', text: "" };
             let finalCode = activeProject.previewCode;
-            let finalHistory = [...activeProject.chatHistory, userMessage];
 
             if (result.type === 'visual') {
                 const codeMatch = result.data.match(/```html([\s\S]*?)```/);
-                finalCode = codeMatch ? codeMatch[1].trim() : activeProject.previewCode;
+                finalCode = codeMatch ? codeMatch[1].trim() : finalCode;
                 aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
-                finalHistory.push(aiMessage);
             } else if (result.type === 'project_zip') {
                 finalCode = result.files.html;
-                setProjectFiles(result.files); 
+                setProjectFiles(result.files);
                 setZipData(result.zip);
                 aiMessage.text = "I've generated the full project files for you.";
-                finalHistory.push(aiMessage);
             } else {
                 aiMessage.text = result.data;
-                finalHistory.push(aiMessage);
             }
 
-            updateActiveProject({
-                previewCode: finalCode,
-                chatHistory: finalHistory,
-                interactionCount: finalHistory.length,
-            });
+            // Add the AI's response to the history
+            addMessageToHistory(aiMessage);
+
+            // Update the preview code separately
+            updateActiveProject({ previewCode: finalCode });
+
+            if (result.suggestions) {
+                setSuggestions(result.suggestions);
+            }
 
             if (onNewMessage) onNewMessage();
 
@@ -626,7 +617,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         setShowInitialButtons(false);
         let newPreview = '';
         const lowerReply = reply.toLowerCase();
-        
+
         if (lowerReply === 'website') newPreview = initialWebsitePreview;
         else if (lowerReply === 'portfolio') newPreview = initialPortfolioPreview;
         else if (lowerReply === 'e-commerce') newPreview = initialEcommercePreview;
@@ -634,6 +625,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         else if (lowerReply === 'chatbot') newPreview = initialChatbotPreview;
 
         if (newPreview) {
+            addMessageToHistory({ from: 'user', text: `Create a ${reply} for me.` }); // Add this line
             updatePreviewCode(newPreview);
             addMessageToHistory({ from: 'ai', text: `Here is a standard ${reply} template to get you started. What would you like to change?` });
             updateActiveProject({ interactionCount: (activeProject.interactionCount || 0) + 1 });
