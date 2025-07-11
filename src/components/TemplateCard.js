@@ -1,37 +1,51 @@
 // src/components/TemplateCard.js
 
 import React from 'react';
-import { Plus, Eye } from 'lucide-react';
+import { Plus, Eye, Check } from 'lucide-react';
 
-const TemplateCard = ({ name, description, imageUrl, onSelect, onPreview, isSelected }) => {
+const TemplateCard = ({ template, onComponentSelect, onPreview, selectedComponents }) => {
     return (
-        <div className="group relative rounded-xl overflow-hidden glass-card border border-white/10 aspect-[3/4]">
-            <img src={imageUrl} alt={name} className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105" />
-            
-            {/* Overlay for buttons and text */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col justify-end">
-                <div className="p-6">
-                    <h3 className="text-2xl font-bold font-premium text-white">{name}</h3>
-                    <p className="text-gray-300">{description}</p>
+        <div className="group relative rounded-xl overflow-hidden glass-card border border-white/10 flex flex-col">
+            <div className="relative aspect-[3/4]">
+                <img src={`/template-previews/${template.name.toLowerCase()}.jpg`} alt={template.name} className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col justify-end p-6">
+                    <h3 className="text-2xl font-bold font-premium text-white">{template.name}</h3>
+                    <p className="text-gray-300">{template.description}</p>
+                </div>
+                 <div className="absolute top-4 right-4 flex gap-2">
+                    <button 
+                        onClick={() => onPreview(template)}
+                        className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-lg text-white font-bold rounded-full hover:bg-white/30 transition-colors"
+                        title="Preview"
+                    >
+                        <Eye size={20} />
+                    </button>
                 </div>
             </div>
-
-            {/* Buttons that appear on hover */}
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button 
-                    onClick={onPreview}
-                    className="flex items-center gap-2 bg-white/20 backdrop-blur-lg text-white font-bold py-3 px-6 rounded-lg hover:bg-white/30 transition-colors"
-                >
-                    <Eye size={20} /> Preview
-                </button>
-                <button
-                    onClick={onSelect}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
-                        ${isSelected ? 'bg-green-500 text-white' : 'bg-black/40 text-gray-200 backdrop-blur-sm hover:bg-purple-600 hover:text-white'}`}
-                    title={isSelected ? "Remove from Canvas" : "Add to Creation Canvas"}
-                >
-                    <Plus className={`transition-transform duration-300 ${isSelected ? 'rotate-45' : ''}`} />
-                </button>
+            
+            {/* NEW: Section for component checkboxes */}
+            <div className="p-4 bg-gray-900/50">
+                <h4 className="font-bold text-sm text-gray-300 mb-3">Select Components:</h4>
+                <div className="space-y-2">
+                    {template.sections.map(section => {
+                        const key = `${template.id}-${section}`;
+                        const isSelected = !!selectedComponents[key];
+                        return (
+                             <label key={key} className="flex items-center space-x-3 p-2 rounded-md hover:bg-purple-500/10 cursor-pointer transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => onComponentSelect(template, section)}
+                                    className="hidden"
+                                />
+                                <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all duration-200 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-600 group-hover:border-purple-400'}`}>
+                                    {isSelected && <Check size={14} strokeWidth={3} />}
+                                </div>
+                                <span className="text-gray-300">{section}</span>
+                            </label>
+                        )
+                    })}
+                </div>
             </div>
         </div>
     );

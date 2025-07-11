@@ -1,69 +1,53 @@
-// src/components/Taskbar.js
+// src/components/TemplateCard.js
 
 import React from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { useProjectContext } from '../ProjectContext'; // UPDATED: Import the project context hook
-import { LayoutDashboard, FolderKanban, Library, Store, BrainCircuit, Settings as SettingsIcon } from 'lucide-react';
+import { Eye, Check } from 'lucide-react';
 
-const Taskbar = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { activeProject } = useProjectContext(); // UPDATED: Get the active project from context
-
-    const navItems = [
-        { path: '/dashboard', icon: <LayoutDashboard size={24} />, label: 'Dashboard', title: 'Dashboard' },
-        // UPDATED: The 'Projects' item is now just a placeholder for logic below
-        { path: '/projects', icon: <FolderKanban size={24} />, label: 'Projects', title: 'Your Projects' },
-        { path: '/assets', icon: <Library size={24} />, label: 'Asset Library', title: 'Asset Library' },
-        { path: '/templates', icon: <Store size={24} />, label: 'Templates', title: 'Template Marketplace' },
-        { path: '/knowledge-base', icon: <BrainCircuit size={24} />, label: 'Knowledge Base', title: 'Custom Knowledge Base' },
-    ];
-
+const TemplateCard = ({ template, onComponentSelect, onPreview, selectedComponents }) => {
     return (
-        <div className="group fixed left-0 top-0 h-full w-20 hover:w-64 bg-black/20 backdrop-blur-xl border-r border-white/10 flex flex-col items-center py-6 gap-2 z-40 transition-all duration-300 ease-in-out">
-            <Link to="/" className="mb-6 flex-shrink-0">
-                <img src="/logo.png" alt="Volts Logo" className="h-8 w-auto"/>
-            </Link>
-            
-            <div className="flex flex-col gap-2 w-full">
-                {navItems.map(item => {
-                    // UPDATED: Smarter isActive check and onClick navigation for 'Projects'
-                    const isProjectsTab = item.label === 'Projects';
-                    
-                    // The Projects tab is active if we are on the project list OR the AI interface.
-                    const isActive = isProjectsTab
-                        ? location.pathname === '/projects' || location.pathname === '/ai-interface'
-                        : location.pathname === item.path;
-                    
-                    // The Projects tab navigates to the active session if one exists.
-                    const targetPath = isProjectsTab
-                        ? (activeProject ? '/ai-interface' : '/projects')
-                        : item.path;
-
-                    return (
-                        <button 
-                            key={item.path}
-                            onClick={() => navigate(targetPath)} 
-                            className={`w-full flex items-center gap-4 px-6 py-3 transition-colors ${
-                                isActive 
-                                ? 'bg-purple-500/20 text-white' 
-                                : 'text-gray-400 hover:bg-purple-500/20 hover:text-white'
-                            }`}
-                            title={item.title}
-                        >
-                            <div className="flex-shrink-0">{item.icon}</div>
-                            <span className="opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto transition-all duration-200 overflow-hidden font-premium whitespace-nowrap">{item.label}</span>
-                        </button>
-                    )
-                })}
+        <div className="group relative rounded-xl overflow-hidden glass-card border border-white/10 flex flex-col">
+            <div className="relative aspect-[3/4]">
+                <img src={`/template-previews/${template.name.toLowerCase()}.jpg`} alt={template.name} className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex flex-col justify-end p-6">
+                    <h3 className="text-2xl font-bold font-premium text-white">{template.name}</h3>
+                    <p className="text-gray-300">{template.description}</p>
+                </div>
+                 <div className="absolute top-4 right-4 flex gap-2">
+                    <button 
+                        onClick={() => onPreview(template)}
+                        className="w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-lg text-white font-bold rounded-full hover:bg-white/30 transition-colors"
+                        title="Preview"
+                    >
+                        <Eye size={20} />
+                    </button>
+                </div>
             </div>
-
-            <button onClick={() => alert('Settings will be available soon!')} className="w-full flex items-center gap-4 px-6 py-3 text-gray-400 hover:bg-purple-500/20 hover:text-white transition-colors mt-auto" title="Settings">
-                <SettingsIcon size={24} className="flex-shrink-0" />
-                <span className="opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto transition-all duration-200 overflow-hidden font-premium whitespace-nowrap">Settings</span>
-            </button>
+            
+            <div className="p-4 bg-gray-900/50">
+                <h4 className="font-bold text-sm text-gray-300 mb-3">Select Components:</h4>
+                <div className="space-y-2">
+                    {template.sections.map(section => {
+                        const key = `${template.id}-${section}`;
+                        const isSelected = !!selectedComponents[key];
+                        return (
+                             <label key={key} className="flex items-center space-x-3 p-2 rounded-md hover:bg-purple-500/10 cursor-pointer transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => onComponentSelect(template, section)}
+                                    className="hidden"
+                                />
+                                <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center border-2 transition-all duration-200 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-600 group-hover:border-purple-400'}`}>
+                                    {isSelected && <Check size={14} strokeWidth={3} />}
+                                </div>
+                                <span className="text-gray-300">{section}</span>
+                            </label>
+                        )
+                    })}
+                </div>
+            </div>
         </div>
     );
 };
 
-export default Taskbar;
+export default TemplateCard;

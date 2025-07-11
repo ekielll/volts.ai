@@ -4,167 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import JSZip from 'jszip';
 import * as cheerio from 'cheerio';
-
-const baseTemplates = {
-    WEBSITE: `
-        <!DOCTYPE html>
-        <html lang="en" class="scroll-smooth">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; }</style>
-            <title>Your Professional Website</title>
-        </head>
-        <body class="bg-gray-900 text-white">
-            <nav class="bg-gray-900/80 backdrop-blur-lg sticky top-0 z-50 border-b border-white/10">
-                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div id="logo" class="font-bold text-xl">YourLogo</div>
-                    <ul class="flex gap-8">
-                        <li><a href="#hero" class="hover:text-purple-400 transition-colors">Home</a></li>
-                        <li><a href="#services" class="hover:text-purple-400 transition-colors">Services</a></li>
-                        <li><a href="#about" class="hover:text-purple-400 transition-colors">About</a></li>
-                        <li><a href="#contact" class="hover:text-purple-400 transition-colors">Contact</a></li>
-                    </ul>
-                </div>
-            </nav>
-            <header id="hero" class="container mx-auto px-6 py-24 text-center">
-                <h1 id="main-headline" class="text-5xl md:text-7xl font-bold leading-tight">[HEADLINE]</h1>
-                <p id="sub-headline" class="text-xl text-gray-400 mt-4 max-w-3xl mx-auto">We create stunning websites that captivate and convert. Let's build your success story together.</p>
-                <button id="cta-button" class="mt-8 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-bold transition-transform duration-300 hover:scale-105">Get a Free Quote</button>
-            </header>
-            <section id="services" class="py-20 bg-gray-800">
-                <div class="container mx-auto px-6 text-center">
-                    <h2 class="text-4xl font-bold mb-12">Our Services</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="bg-gray-900 p-8 rounded-xl shadow-lg">
-                            <h3 class="text-2xl font-bold mb-4">Web Design</h3>
-                            <p class="text-gray-400">Crafting beautiful and intuitive user interfaces that delight your visitors.</p>
-                        </div>
-                        <div class="bg-gray-900 p-8 rounded-xl shadow-lg">
-                            <h3 class="text-2xl font-bold mb-4">Development</h3>
-                            <p class="text-gray-400">Building robust and scalable web applications tailored to your specific needs.</p>
-                        </div>
-                        <div class="bg-gray-900 p-8 rounded-xl shadow-lg">
-                            <h3 class="text-2xl font-bold mb-4">SEO</h3>
-                            <p class="text-gray-400">Optimizing your site to rank higher on search engines and attract more traffic.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <section id="about" class="py-20">
-                <div class="container mx-auto px-6 text-center">
-                       <h2 class="text-4xl font-bold mb-4">What Our Clients Say</h2>
-                       <blockquote class="max-w-3xl mx-auto mt-8">
-                            <p class="text-2xl italic text-gray-300">"Working with them was a game-changer. Our engagement metrics have skyrocketed!"</p>
-                            <cite class="block text-right not-italic text-purple-400 mt-4">- Jane Doe, CEO of Awesome Inc.</cite>
-                       </blockquote>
-                </div>
-            </section>
-            <footer id="contact" class="bg-gray-800 py-10">
-                <div class="container mx-auto px-6 text-center text-gray-400">
-                    <p>&copy; 2025 Your Company. All Rights Reserved.</p>
-                </div>
-            </footer>
-        </body>
-        </html>`,
-    PORTFOLIO: `
-        <!DOCTYPE html>
-        <html lang="en" class="scroll-smooth">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; }</style>
-            <title>Your Portfolio</title>
-        </head>
-        <body class="bg-gray-900 text-white">
-            <section id="hero" class="h-screen flex items-center justify-center text-center bg-gradient-to-br from-gray-900 to-purple-900/50">
-                <div>
-                    <h1 id="portfolio-name" class="text-7xl font-bold">[NAME]</h1>
-                    <p id="portfolio-title" class="text-2xl text-purple-400 mt-2">[TITLE]</p>
-                </div>
-            </section>
-            <section id="work" class="py-20">
-                <div class="container mx-auto px-6">
-                    <h2 class="text-4xl font-bold text-center mb-12">My Work</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                    </div>
-                </div>
-            </section>
-        </body>
-        </html>`,
-    ECOMMERCE: `
-        <!DOCTYPE html>
-        <html lang="en" class="scroll-smooth">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; }</style>
-            <title>Your Store</title>
-        </head>
-        <body class="bg-gray-100">
-            <div class="bg-purple-600 text-white text-center py-2 text-sm"><p>Free Shipping On All Orders Over $50</p></div>
-            <nav class="bg-white shadow-md sticky top-0 z-50">
-                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div id="logo" class="font-bold text-xl text-gray-800">YourStore</div>
-                    <ul class="flex gap-8 text-gray-600">
-                        <li><a href="#products" class="hover:text-purple-600 transition-colors">Products</a></li>
-                    </ul>
-                </div>
-            </nav>
-            <header class="bg-gray-200">
-                <div class="container mx-auto px-6 py-20 text-center">
-                    <h1 class="text-5xl font-bold text-gray-800">[PROMOTION_HEADLINE]</h1>
-                    <p class="text-gray-600 mt-4">Discover the latest trends.</p>
-                    <button class="mt-8 px-8 py-3 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700">Shop Now</button>
-                </div>
-            </header>
-        </body>
-        </html>`,
-    BLOG: `
-        <!DOCTYPE html>
-        <html lang="en" class="scroll-smooth">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Lora:wght@400;700&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; } .font-serif { font-family: 'Lora', serif; }</style>
-            <title>Your Awesome Blog</title>
-        </head>
-        <body class="bg-gray-100 text-gray-800">
-            <header class="bg-white border-b py-6 text-center">
-                <h1 id="blog-title" class="text-5xl font-bold">[BLOG_NAME]</h1>
-                <p class="text-gray-500 mt-2">Your dose of insights.</p>
-            </header>
-        </body>
-        </html>`,
-    CHATBOT: `
-        <!DOCTYPE html>
-        <html class="h-full">
-        <head>
-            <meta charset="UTF-8">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; }</style>
-        </head>
-        <body class="h-full bg-gray-800 p-10 flex items-center justify-center">
-            <div class="w-full max-w-sm h-[70vh] flex flex-col bg-gray-900 shadow-2xl rounded-2xl">
-                <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-t-2xl">
-                    <h3 id="chatbot-name" class="font-bold text-white text-lg">[ASSISTANT_NAME]</h3>
-                </div>
-            </div>
-        </body>
-        </html>`,
-};
+import { baseTemplates } from '../lib/baseModels'; // Import the base templates
 
 // FULLY RESTORED AND UPGRADED PROMPT
 const ZOLTRAK_SYSTEM_PROMPT = `
@@ -366,10 +206,36 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { history, prompt, imageBase64, userPlan, userId, projectId, currentCode: codeFromRequest } = req.body;
+        const { history, prompt, imageBase64, userPlan, userId, projectId, currentCode: codeFromRequest, synthesis_request } = req.body;
 
         let currentCode = codeFromRequest;
         let marketingRules = [];
+
+        // NEW: Handle Chimera Engine Synthesis Request
+        if (synthesis_request) {
+            const { components, prompt: synthesisPrompt } = synthesis_request;
+            let sourceCodesString = '';
+            let componentCount = 1;
+            
+            for (const key in components) {
+                const { templateName } = components[key];
+                const templateKey = templateName.toUpperCase();
+                if (baseTemplates[templateKey]) {
+                     sourceCodesString += `---[Source Code ${componentCount++}: ${templateName}]---\n${baseTemplates[templateKey]}\n\n`;
+                }
+            }
+
+            const synthesisSystemPrompt = `${ZOLTRAK_SYSTEM_PROMPT}\n\nThe user wants to synthesize a new website from multiple sources. Their instruction is: "${synthesisPrompt}".\n\nHere are the source codes:\n${sourceCodesString}`;
+
+            const completion = await openai.chat.completions.create({
+                model: 'gpt-4o',
+                messages: [{ role: 'system', content: synthesisSystemPrompt }]
+            });
+
+            const responseContent = completion.choices[0].message.content;
+            return res.status(200).json({ type: 'visual', data: responseContent });
+        }
+
 
         if (projectId && !currentCode) {
             const { data: projectData } = await supabaseAdmin

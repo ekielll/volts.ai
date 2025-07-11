@@ -4,10 +4,8 @@ import React, { useState } from 'react';
 import { CheckCircle, Plus } from 'lucide-react';
 
 const PricingSection = ({ handleChoosePlan }) => {
-  // Defaults to 'annual' billing cycle
   const [billingCycle, setBillingCycle] = useState('annual');
   const [isCompareOpen, setIsCompareOpen] = useState(false);
-  // State for the flexible Grid plan tier
   const [selectedGridTier, setSelectedGridTier] = useState('base');
 
   const plans = {
@@ -29,7 +27,6 @@ const PricingSection = ({ handleChoosePlan }) => {
     pro: { monthly: { price: '$199', interactions: 'Unlimited Interactions' }, annual: { price: '$141', originalPrice: '$199', interactions: 'Unlimited Interactions' } },
   };
   
-  // UPDATED: Added "Pro Code Export" to the Publishing category
   const featureList = [
     { category: 'Core Features', items: [
       { name: 'AI Interactions', values: ['100 /mo', '750 /mo', '2,000 /mo', 'Up to Unlimited'] },
@@ -77,7 +74,6 @@ const PricingSection = ({ handleChoosePlan }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto items-stretch">
-          {/* Renders Spark, Volt, and Surge plans */}
           {plans[billingCycle].map((plan) => (
             <div key={plan.name} className={`glass-card h-full p-8 rounded-xl text-left flex flex-col transition-transform duration-300 ${plan.popular ? 'pricing-card-popular scale-100 md:scale-105' : 'scale-100 md:scale-95'}`}>
               {plan.popular && <span className="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full self-start mb-6 font-premium">MOST POPULAR</span>}
@@ -99,7 +95,6 @@ const PricingSection = ({ handleChoosePlan }) => {
             </div>
           ))}
 
-          {/* The Flexible Grid Plan Card */}
           <div className="glass-card h-full p-8 rounded-xl text-left flex flex-col transition-transform duration-300 scale-100 md:scale-95">
               <h3 className="text-2xl font-bold mb-2 font-premium">Grid</h3>
               <p className="text-gray-400 mb-6 h-10">For power users & teams</p>
@@ -121,7 +116,6 @@ const PricingSection = ({ handleChoosePlan }) => {
                   }`}></div>
                 </div>
               </div>
-              {/* UPDATED: Grid features list */}
               <ul className="space-y-4 text-gray-300 mb-8 flex-grow">
                 <li className="flex items-start"><CheckCircle className="w-5 h-5 text-green-400 mr-3 mt-1 flex-shrink-0" /><span>{currentGridPlan.interactions}</span></li>
                 <li className="flex items-start"><CheckCircle className="w-5 h-5 text-green-400 mr-3 mt-1 flex-shrink-0" /><span>Unlimited Projects</span></li>
@@ -135,7 +129,6 @@ const PricingSection = ({ handleChoosePlan }) => {
           </div>
         </div>
 
-        {/* Collapsible Feature Comparison Grid */}
         <div className="max-w-7xl mx-auto mt-20">
             <div className="border border-white/10 rounded-lg">
                 <button onClick={() => setIsCompareOpen(!isCompareOpen)} className="w-full flex justify-between items-center p-6 cursor-pointer hover:bg-white/5 group transition-colors duration-300">

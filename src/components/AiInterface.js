@@ -1,16 +1,18 @@
 // /src/components/AiInterface.js
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { supabase } from '../supabaseClient';
 import { useProjectContext } from '../ProjectContext';
+import { useAuth } from '../AuthContext';
 import ChatPanel from './ChatPanel';
 import PreviewPanel from './PreviewPanel';
 import * as cheerio from 'cheerio';
-import { X, Link, CornerDownLeft } from 'lucide-react';
+import { X, Link, CornerDownLeft, Image as ImageIcon } from 'lucide-react';
 
 const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profile, project }) => {
     // --- CONTEXT STATE ---
+    const { user } = useAuth();
     const {
         activeProject,
         addMessageToHistory,
@@ -103,30 +105,30 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             </section>
             <section id="work" class="py-20">
                 <div class="container mx-auto px-6">
-                    <h2 class="text-4xl font-bold text-center mb-12">My Work</h2>
+                    <h2 id="work-title" class="text-4xl font-bold text-center mb-12">My Work</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
-                        <div class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-1" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-2" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-3" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-4" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-5" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
+                        <div id="work-item-6" class="bg-gray-800 aspect-square rounded-lg flex items-center justify-center text-gray-500">Placeholder for your work</div>
                     </div>
                 </div>
             </section>
             <section id="about" class="py-20 bg-gray-800">
                 <div class="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
                     <div class="md:w-1/3 flex justify-center">
-                        <div class="w-64 h-64 bg-purple-500 rounded-full flex items-center justify-center text-white">Your Headshot</div>
+                        <img id="about-headshot" src="https://placehold.co/256x256/7c3aed/ffffff?text=Your\nHeadshot" alt="Headshot" class="w-64 h-64 rounded-full object-cover">
                     </div>
                     <div class="md:w-2/3 text-center md:text-left">
-                        <h2 class="text-4xl font-bold mb-4">About Me</h2>
+                        <h2 id="about-title" class="text-4xl font-bold mb-4">About Me</h2>
                         <p id="portfolio-bio" class="text-gray-400 text-lg">I'm a passionate and dedicated professional with a knack for creating amazing things. My experience lies in [Your Skill 1], [Your Skill 2], and [Your Skill 3]. Let's create something incredible together.</p>
                     </div>
                 </div>
             </section>
             <footer id="contact" class="bg-gray-900 py-10 text-center text-gray-400">
-                <p>Get in touch: <a href="mailto:email@example.com" class="text-purple-400">email@example.com</a></p>
+                <p>Get in touch: <a id="contact-email" href="mailto:email@example.com" class="text-purple-400">email@example.com</a></p>
             </footer>
         </body>
         </html>`;
@@ -331,6 +333,8 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     const [showInitialButtons, setShowInitialButtons] = useState(true);
     const [pageSections, setPageSections] = useState([]);
     const [previewMode, setPreviewMode] = useState('desktop');
+    const [history, setHistory] = useState([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
 
     const [copilotModal, setCopilotModal] = useState({
         isOpen: false,
@@ -342,8 +346,20 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     // --- REFS ---
     const fileInputRef = useRef(null);
     const iframeRef = useRef(null);
+    const imageUploadInputRef = useRef(null);
 
     // --- EFFECTS ---
+    useEffect(() => {
+        if (activeProject?.previewCode && activeProject.previewCode !== (history[historyIndex] || null)) {
+            const newHistory = history.slice(0, historyIndex + 1);
+            newHistory.push(activeProject.previewCode);
+            setHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeProject?.previewCode]);
+
+
     useEffect(() => {
         if (activeProject && activeProject.interactionCount > 0) {
             setShowInitialButtons(false);
@@ -373,6 +389,11 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         }
     }, [activeProject?.previewCode]);
 
+    // --- HANDLERS ---
+    const handleCritique = () => {
+        const critiquePrompt = "As a world-class UI/UX design expert, analyze the following HTML code and provide 3-4 actionable suggestions to improve its design, layout, and user experience. Focus on principles like spacing, typography, color contrast, and call-to-action clarity. Format your response as a friendly, conversational message with bullet points.";
+        handleSendMessage(null, critiquePrompt);
+    };
 
     const handleIframeLoad = () => {
         const iframe = iframeRef.current;
@@ -389,7 +410,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             e.preventDefault();
             e.stopPropagation();
 
-            const supportedTags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'DIV'];
+            const supportedTags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'DIV', 'IMG'];
 
             if (target && target.id) {
                  if (target.tagName === 'A') {
@@ -398,6 +419,13 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                         mode: 'edit-link',
                         element: { id: target.id, tagName: target.tagName, currentHref: target.getAttribute('href') },
                         inputValue: target.getAttribute('href') || ''
+                    });
+                } else if (target.tagName === 'IMG') {
+                     setCopilotModal({
+                        isOpen: true,
+                        mode: 'change-image',
+                        element: { id: target.id, tagName: target.tagName, currentSrc: target.src },
+                        inputValue: ''
                     });
                 } else if (supportedTags.includes(target.tagName)) {
                     setSelectedElement({ id: target.id, tagName: target.tagName, content: target.innerText });
@@ -424,6 +452,39 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     const handleCloseVisualCopilot = () => {
         setCopilotModal({ isOpen: false, mode: null, element: null, inputValue: '' });
     };
+    
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !user || !copilotModal.element) return;
+        
+        setIsLoading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', user.id);
+
+        try {
+            const response = await fetch('/api/uploadImage', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error('Image upload failed.');
+            const { url } = await response.json();
+
+            const $ = cheerio.load(activeProject.previewCode, { xmlMode: false });
+            $(`#${copilotModal.element.id}`).attr('src', url);
+            const updatedCode = $.html();
+            updatePreviewCode(updatedCode);
+            if (onNewMessage) onNewMessage();
+
+        } catch (error) {
+            alert(`Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+            handleCloseVisualCopilot();
+        }
+    };
+
 
     const handleCopilotSubmit = () => {
         const { mode, element, inputValue } = copilotModal;
@@ -471,9 +532,13 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         if (e) e.preventDefault();
         const currentInput = promptOverride || input;
         if ((!currentInput.trim() && !uploadedImage) || isLoading) return;
-
+        
         const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
-        const newHistoryForAPI = [...activeProject.chatHistory, userMessage];
+        if (currentInput.includes("As a world-class UI/UX design expert")) {
+            userMessage.text = "Critique my current design.";
+        }
+        
+        const newHistoryForAPI = [...activeProject.chatHistory, { from: 'user', text: promptOverride || input, image: uploadedImage }];
 
         addMessageToHistory(userMessage);
         setInput(''); 
@@ -489,7 +554,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     history: newHistoryForAPI.map(msg => ({ from: msg.from, text: msg.text })),
-                    prompt: currentInput,
+                    prompt: promptOverride || input,
                     imageBase64: uploadedImage,
                     userPlan: profile?.subscription_tier || 'Free',
                     userId: profile?.id,
@@ -507,22 +572,22 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             
             const aiMessage = { from: 'ai', text: "" };
             let finalCode = activeProject.previewCode;
-            let finalHistory = newHistoryForAPI;
+            let finalHistory = [...activeProject.chatHistory, userMessage];
 
             if (result.type === 'visual') {
                 const codeMatch = result.data.match(/```html([\s\S]*?)```/);
                 finalCode = codeMatch ? codeMatch[1].trim() : activeProject.previewCode;
                 aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
-                finalHistory = [...newHistoryForAPI, aiMessage];
+                finalHistory.push(aiMessage);
             } else if (result.type === 'project_zip') {
                 finalCode = result.files.html;
                 setProjectFiles(result.files); 
                 setZipData(result.zip);
                 aiMessage.text = "I've generated the full project files for you.";
-                finalHistory = [...newHistoryForAPI, aiMessage];
+                finalHistory.push(aiMessage);
             } else {
                 aiMessage.text = result.data;
-                finalHistory = [...newHistoryForAPI, aiMessage];
+                finalHistory.push(aiMessage);
             }
             
             if (result.suggestions) {
@@ -580,6 +645,23 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         }
     };
 
+    const handleUndo = useCallback(() => {
+        if (historyIndex > 0) {
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            updatePreviewCode(history[newIndex]);
+        }
+    }, [history, historyIndex, updatePreviewCode]);
+
+    const handleRedo = useCallback(() => {
+        if (historyIndex < history.length - 1) {
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            updatePreviewCode(history[newIndex]);
+        }
+    }, [history, historyIndex, updatePreviewCode]);
+
+
     const handleSuggestionClick = (suggestion) => { handleSendMessage(null, suggestion); };
 
     const handleFileChange = (e) => {
@@ -632,12 +714,25 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                             getRuleStatus={(elementId) => liveMarketingRules.find(r => r.target_element_id === elementId)?.is_enabled}
                             previewMode={previewMode}
                             setPreviewMode={setPreviewMode}
+                            onUndo={handleUndo}
+                            onRedo={handleRedo}
+                            canUndo={historyIndex > 0}
+                            canRedo={historyIndex < history.length - 1}
+                            onCritique={handleCritique}
                         />
                     </Panel>
                 </PanelGroup>
             </div>
             
-            {copilotModal.isOpen && copilotModal.mode !== 'edit-link' && (
+            <input
+                type="file"
+                ref={imageUploadInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUpload}
+            />
+            
+            {copilotModal.isOpen && copilotModal.mode !== 'edit-link' && copilotModal.mode !== 'change-image' && (
                  <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
                     <div className="glass-card rounded-xl w-full max-w-lg flex flex-col relative bg-[#1F2937]/80 p-6">
                         <button onClick={handleCloseVisualCopilot} className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white">
@@ -659,6 +754,27 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                     </div>
                 </div>
             )}
+            
+            {copilotModal.isOpen && copilotModal.mode === 'change-image' && (
+                 <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+                    <div className="glass-card rounded-xl w-full max-w-lg flex flex-col relative bg-[#1F2937]/80 p-6">
+                        <button onClick={handleCloseVisualCopilot} className="absolute top-3 right-3 p-1 rounded-full text-gray-400 hover:bg-white/10 hover:text-white">
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h3 className="text-lg font-bold font-premium mb-4 flex items-center gap-2"><ImageIcon size={20}/> Change Image</h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                           Current Image:
+                        </p>
+                        <div className="mb-4 bg-gray-900/50 p-4 rounded-lg flex justify-center items-center">
+                            <img src={copilotModal.element.currentSrc} alt="Current" className="max-h-32 rounded-md" />
+                        </div>
+                        <button onClick={() => imageUploadInputRef.current.click()} className="w-full premium-button text-white font-bold py-2 rounded-lg">
+                            Upload New Image
+                        </button>
+                    </div>
+                </div>
+            )}
+
             
             {copilotModal.isOpen && copilotModal.mode === 'edit-link' && (
                  <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
