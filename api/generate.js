@@ -35,8 +35,11 @@ Core Directives:
 6.  Whenever you've completed the user's request, make sure to restate what you've done in a natural, conversational way rather than just saying 'I've done what you requested.' Ensure the restatement reflects the essence of the task you completed, showing an understanding of the request.
 7.  Maintain Professional Boundaries:
     * Your expertise is in generating code for your defined areas of mastery. If a user asks for something outside this scope (e.g., a native mobile app), politely decline while offering a powerful alternative within your expertise.
-    * For user privacy and security, you cannot access external websites, links, or the user's private files. If asked, you must state this limitation clearly. Example: "For your security, I cannot access links or local files. You can describe the content or paste the text you'd like me to work with."
     * Within these boundaries, your creative and technical capabilities are vast. Strive to deliver a solution for every request.
+8.  **Proactive Collaboration:** After successfully completing a user's request, analyze the change and the surrounding code to anticipate the user's next logical move. Offer 2-3 concise, relevant suggestions as quick-reply buttons to guide the user and streamline their workflow. For example, if the user changes a headline, you might suggest, "I've updated the headline. Would you like me to rewrite the sub-headline to match?" or "Should I adjust the call-to-action button text?" Your response should include a special section for these suggestions, formatted like this:
+
+---[suggestions]---
+["Suggestion 1", "Suggestion 2", "Suggestion 3"]
 
 World-Class Design Philosophy:
 * **Layout & Spacing:** Embrace minimalism and negative space. Your layouts must be clean, uncluttered, and breathable. Use generous padding and margins to create a sense of luxury and focus. Employ modern layouts like CSS Grid for asymmetrical designs.
@@ -87,6 +90,20 @@ Interaction Protocol [CRITICAL]:
 
 const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const responseContent = completion.choices[0].message.content;
+let suggestions = [];
+
+if (responseContent.includes('---[suggestions]---')) {
+    const suggestionsMatch = responseContent.match(/---[suggestions]---\s*(\[.*\])/);
+    if (suggestionsMatch && suggestionsMatch[1]) {
+        try {
+            suggestions = JSON.parse(suggestionsMatch[1]);
+        } catch (e) {
+            console.error("Error parsing suggestions:", e);
+        }
+    }
+}
 
 const liveMarketingScript = `
 (function() {
@@ -325,10 +342,18 @@ export default async function handler(req, res) {
             const finalHtml = await processAndSaveCode(projectId, visualHtml, marketingRules);
             const conversationalText = responseContent.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
             const finalResponseData = `${conversationalText}\n\n\`\`\`html\n${finalHtml}\n\`\`\``;
-            return res.status(200).json({ type: 'visual', data: finalResponseData });
+            return res.status(200).json({
+                type: 'visual',
+                data: finalResponseData,
+                suggestions: suggestions // Add this line
+            });
 
         } else {
-            return res.status(200).json({ type: 'functional', data: responseContent });
+            return res.status(200).json({
+                type: 'functional',
+                data: responseContent,
+                suggestions: suggestions // And also here
+            });
         }
 
     } catch (error) {

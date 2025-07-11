@@ -569,7 +569,14 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             }
 
             const result = await response.json();
-            
+
+            // Handle suggestions array
+            if (result.suggestions && result.suggestions.length > 0) {
+                setSuggestions(result.suggestions);
+            } else {
+                setSuggestions([]); // Clear old suggestions
+            }
+
             const aiMessage = { from: 'ai', text: "" };
             let finalCode = activeProject.previewCode;
             let finalHistory = [...activeProject.chatHistory, userMessage];
@@ -588,10 +595,6 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             } else {
                 aiMessage.text = result.data;
                 finalHistory.push(aiMessage);
-            }
-            
-            if (result.suggestions) {
-                setSuggestions(result.suggestions);
             }
 
             updateActiveProject({
