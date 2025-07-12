@@ -504,14 +504,8 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         const simpleEditKeywords = ['change text', 'update color', 'set font', 'edit link'];
         const isComplexRequest = !simpleEditKeywords.some(keyword => currentInput.toLowerCase().includes(keyword));
         
-        setIsLoading(true);
-        setIsThinking(isComplexRequest);
-
         const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
         addMessageToHistory(userMessage);
-
-        const currentCode = activeProject.previewCode;
-        const historyForAPI = [...activeProject.chatHistory, userMessage].map(msg => ({ from: msg.from, text: msg.text }));
 
         setInput('');
         setUploadedImage(null);
@@ -519,18 +513,21 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         setSuggestions([]);
         setSelectedElement(null);
 
+        setIsLoading(true);
+        setIsThinking(isComplexRequest);
+
         try {
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    history: historyForAPI,
+                    history: activeProject.chatHistory,
                     prompt: currentInput,
                     imageBase64: uploadedImage,
                     userPlan: profile?.subscription_tier || 'Free',
                     userId: profile?.id,
                     projectId: project?.id,
-                    currentCode: currentCode
+                    currentCode: activeProject.previewCode
                 })
             });
 
@@ -556,12 +553,12 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                 aiMessage.text = result.data.replace(/---[suggestions]---\s*\[.*\]/s, '').trim();
             }
 
+            if (result.suggestions) {
+                aiMessage.suggestions = result.suggestions;
+            }
+
             addMessageToHistory(aiMessage);
             updateActiveProject({ previewCode: finalCode });
-
-            if (result.suggestions) {
-                setSuggestions(result.suggestions);
-            }
 
             if (onNewMessage) onNewMessage();
 

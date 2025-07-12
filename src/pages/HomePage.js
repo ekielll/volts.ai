@@ -10,17 +10,18 @@ import PricingSection from '../components/PricingSection';
 import Footer from '../components/Footer';
 
 const HomePage = ({ handleOpenAuthModal }) => {
-  console.log("CHECKPOINT 9: HomePage.js - HomePage component is rendering.");
   return (
-    <>
+    <div className="bg-[#111827] text-white">
       <Navbar handleOpenAuthModal={handleOpenAuthModal} />
-      <HeroSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <InteractiveDemoSection />
-      <PricingSection handleChoosePlan={handleOpenAuthModal}/>
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <InteractiveDemoSection />
+        <PricingSection handleChoosePlan={handleOpenAuthModal}/>
+      </main>
       <Footer />
-    </>
+    </div>
   );
 };
 

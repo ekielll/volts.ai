@@ -2,23 +2,22 @@
 
 import React from 'react';
 import { useAuth } from '../AuthContext';
-import { useProjectContext } from '../ProjectContext'; // UPDATED: Import context
-import { useLocation, Link, useNavigate } from 'react-router-dom'; // UPDATED: Added useNavigate back
-import { Save, XCircle } from 'lucide-react'; // UPDATED: Added XCircle icon
+import { useProjectContext } from '../ProjectContext';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { Save, XCircle } from 'lucide-react';
 
 const AppHeader = ({ onSave }) => {
-  const { user, signOut } = useAuth();
-  const { clearActiveProject } = useProjectContext(); // UPDATED: Get context function
+  const { user } = useAuth();
+  const { clearActiveProject } = useProjectContext();
   const location = useLocation();
-  const navigate = useNavigate(); // UPDATED: Added navigate hook
+  const navigate = useNavigate();
 
   const showActionButtons = location.pathname === '/ai-interface';
 
-  // UPDATED: Handler for the new Discard button
   const handleDiscard = () => {
     if (window.confirm('Are you sure you want to discard this session? All unsaved changes will be lost.')) {
-        clearActiveProject(); // Clears the context
-        navigate('/projects'); // Returns to the project list
+        clearActiveProject();
+        navigate('/projects');
     }
   };
 
@@ -30,7 +29,6 @@ const AppHeader = ({ onSave }) => {
             {user ? (
               <div className='flex items-center gap-4'>
                 {showActionButtons && (
-                  // UPDATED: Wrapper div for both action buttons
                   <div className="flex items-center gap-2">
                     <button onClick={handleDiscard} className="text-gray-400 hover:text-white flex items-center gap-2 font-medium py-2 px-4 rounded-lg hover:bg-white/10 transition-all font-premium text-sm">
                         <XCircle size={16} />
@@ -42,9 +40,6 @@ const AppHeader = ({ onSave }) => {
                     </button>
                   </div>
                 )}
-                <button onClick={signOut} className="text-gray-300 hover:text-white font-medium py-2 px-4 rounded-lg hover:bg-white/10 transition-all font-premium text-sm">
-                  Logout
-                </button>
               </div>
             ) : (
               <Link to="/" className="text-gray-300 hover:text-white font-medium py-2 px-5 rounded-lg hover:bg-white/10 transition-all font-premium text-sm">

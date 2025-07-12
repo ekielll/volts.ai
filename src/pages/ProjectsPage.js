@@ -32,7 +32,7 @@ const ProjectsPage = () => {
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const navigate = useNavigate();
-    const { startNewProject } = useProjectContext();
+    const { activeProject, startNewProject } = useProjectContext();
 
     const fetchProjects = useCallback(async () => {
         if (!user) {
@@ -60,8 +60,12 @@ const ProjectsPage = () => {
     }, [user]);
 
     useEffect(() => {
-        fetchProjects();
-    }, [fetchProjects]);
+        if (activeProject) {
+            navigate('/ai-interface');
+        } else {
+            fetchProjects();
+        }
+    }, [activeProject, fetchProjects, navigate]);
 
     const handleDeleteProject = async (projectId) => {
         if (!window.confirm('Are you sure you want to delete this project? This cannot be undone.')) {

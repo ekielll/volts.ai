@@ -4,15 +4,40 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Paperclip, ImageIcon, Zap, BrainCircuit, Paintbrush, Loader2 } from 'lucide-react';
 
 const thinkingMessages = [
-    { icon: <Zap className="w-5 h-5 text-yellow-400" />, text: "Zoltrak is powering up..." },
-    { icon: <BrainCircuit className="w-5 h-5 text-purple-400" />, text: "The Architect is designing your layout..." },
-    { icon: <Paintbrush className="w-5 h-5 text-blue-400" />, text: "The Designer is choosing a color palette..." },
+    { icon: <Zap className="w-5 h-5 text-yellow-400" />, text: "Analyzing your request..." },
+    { icon: <BrainCircuit className="w-5 h-5 text-purple-400" />, text: "Architecting the components..." },
+    { icon: <Paintbrush className="w-5 h-5 text-blue-400" />, text: "Applying the new styles..." },
 ];
+
+const Typewriter = ({ message }) => {
+    const [text, setText] = useState('');
+    
+    useEffect(() => {
+        setText('');
+        let i = 0;
+        const intervalId = setInterval(() => {
+            if (i < message.text.length) {
+                setText(prev => prev + message.text.charAt(i));
+                i++;
+            } else {
+                clearInterval(intervalId);
+            }
+        }, 50);
+        return () => clearInterval(intervalId);
+    }, [message]);
+
+    return (
+        <div className="flex items-center gap-2 text-sm font-premium text-purple-300">
+            {message.icon}
+            <p>{text}</p>
+        </div>
+    );
+};
 
 const ChatPanel = ({
     chatHistory,
     isLoading,
-    isThinking, // New prop for intelligent loading states
+    isThinking,
     showInitialButtons,
     onQuickReply,
     suggestions,
@@ -33,12 +58,12 @@ const ChatPanel = ({
 
     useEffect(() => {
         let interval;
-        if (isThinking) { // Only cycle messages when "thinking"
+        if (isThinking) {
             let index = 0;
             interval = setInterval(() => {
                 index = (index + 1) % thinkingMessages.length;
                 setCurrentThinkingMessage(thinkingMessages[index]);
-            }, 2000);
+            }, 2500);
         }
         return () => clearInterval(interval);
     }, [isThinking]);
@@ -50,13 +75,28 @@ const ChatPanel = ({
                 {chatHistory.map((msg, index) => (
                     <div key={index} className={`flex items-end gap-3 ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {msg.from === 'ai' && (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0">
-                                {/* This is Zoltrak's new profile picture */}
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                             </div>
                         )}
                         <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md ${msg.from === 'user' ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-700/80 text-gray-200 rounded-bl-none'}`}>
                             {msg.image && <img src={msg.image} alt="upload-preview" className="rounded-lg mb-2 max-h-40" />}
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text.replace(/---[suggestions]---\s*\[.*\]/s, '').trim()}</p>
+                            {msg.suggestions && msg.suggestions.length > 0 && !isLoading && (
+                                <div className="mt-4 pt-3 border-t border-white/10">
+                                    <div className="flex flex-wrap gap-2">
+                                        {msg.suggestions.map((suggestion, i) => (
+                                            <button key={i} onClick={() => onSuggestionClick(suggestion)} className="bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 font-medium py-1.5 px-3 rounded-full text-xs transition-all duration-300">
+                                                {suggestion}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -68,34 +108,19 @@ const ChatPanel = ({
                         ))}
                     </div>
                 )}
-
-                {suggestions.length > 0 && !isLoading && (
-                    <div className="pt-2">
-                        <p className="text-xs text-gray-400 mb-2 font-premium">Suggestions:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {suggestions.map((suggestion, index) => (
-                                <button key={index} onClick={() => onSuggestionClick(suggestion)} className="bg-gray-700/50 hover:bg-purple-600/50 text-purple-200 font-medium py-1.5 px-3 rounded-full text-sm transition-all duration-300 border border-transparent hover:border-purple-400 font-premium">{suggestion}</button>
-                            ))}
-                        </div>
-                    </div>
-                )}
                 
                 {isLoading && (
                     <div className="flex items-end gap-3 justify-start">
-                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0"></div>
-                        <div className="bg-gray-700/80 text-gray-200 rounded-2xl rounded-bl-none p-3 text-center">
+                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md bg-gray-700/80 text-gray-200 rounded-bl-none">
                            {isThinking ? (
-                                <>
-                                    <div className="flex items-center gap-2 text-sm font-premium text-purple-300 mb-2">
-                                        {currentThinkingMessage.icon}
-                                        <p>{currentThinkingMessage.text}</p>
-                                    </div>
-                                    <div className="typing-indicator">
-                                        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
-                                        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
-                                        <span className="w-1.5 h-1.5 bg-purple-400 rounded-full inline-block"></span>
-                                    </div>
-                                </>
+                                <Typewriter message={currentThinkingMessage} />
                            ) : (
                                <div className="flex items-center gap-2 text-sm text-gray-400">
                                    <Loader2 className="w-4 h-4 animate-spin"/>
