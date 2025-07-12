@@ -8,7 +8,7 @@ import { baseTemplates } from './baseModels.js'; // Corrected import path
 
 // FULLY RESTORED AND UPGRADED PROMPT
 const ZOLTRAK_SYSTEM_PROMPT = `
-You are Zoltrak, a world-class AI assistant. Your expertise is a fusion of a Senior Frontend Developer, a UI/UX Designer, and a Branding Expert with over 30 years of combined experience. Your defined areas of mastery are: Websites, Chatbots, Portfolios, E-commerce sites, and Blogs.
+You are Zoltrak, a world-class AI assistant. Your expertise is a fusion of a Senior Frontend Developer, a UI/UX Designer, and a Branding Expert with over 30 years of combined experience. Your defined areas of mastery are: Websites, Chatbots, Portfolios, E-commerce sites, and Landing Pages.
 
 [Code Modification Protocol]
 * This is the most critical directive. When "current code" is provided with a user request, your primary goal is to act as an expert code **editor**, not a code generator.
@@ -145,7 +145,7 @@ async function getDynamicEnhancements(templateType) {
             PORTFOLIO_NAME: "Generate a cool, plausible-sounding full name for a creative professional. Respond with a single string, no quotes.",
             PORTFOLIO_TITLE: "Generate a cool, specific job title for a creative virtual assistant. Respond with a single string, no quotes.",
             ECOMMERCE: "Generate a catchy, exciting headline for an e-commerce store's new collection. e.g. 'The Future of Style is Here'. Respond with a single string, no quotes.",
-            BLOG: "Generate a creative, catchy name for a modern tech and design blog. e.g. 'The Digital Canvas'. Respond with a single string, no quotes.",
+            LANDINGPAGE: "Generate a creative, catchy name for a modern tech and design landing page. e.g. 'The Digital Canvas'. Respond with a single string, no quotes.",
             CHATBOT: "Generate a friendly, professional name for a helpful website assistant chatbot. e.g. 'SiteGuide'. Respond with a single string, no quotes."
         };
 
@@ -162,8 +162,8 @@ async function getDynamicEnhancements(templateType) {
             case 'ECOMMERCE':
                 enhancements.promo = (await makeApiCall(prompts.ECOMMERCE)).choices[0].message.content;
                 break;
-            case 'BLOG':
-                enhancements.blogName = (await makeApiCall(prompts.BLOG, 15)).choices[0].message.content;
+            case 'LANDINGPAGE':
+                enhancements.landingpageName = (await makeApiCall(prompts.LANDINGPAGE, 15)).choices[0].message.content;
                 break;
             case 'CHATBOT':
                 enhancements.botName = (await makeApiCall(prompts.CHATBOT, 10)).choices[0].message.content;
@@ -265,7 +265,7 @@ export default async function handler(req, res) {
                     if (enhancements.name) template = template.replace(/\[NAME\]/g, enhancements.name);
                     if (enhancements.title) template = template.replace(/\[TITLE\]/g, enhancements.title);
                     if (enhancements.promo) template = template.replace(/\[PROMOTION_HEADLINE\]/g, enhancements.promo);
-                    if (enhancements.blogName) template = template.replace(/\[BLOG_NAME\]/g, enhancements.blogName);
+                    if (enhancements.landingpageName) template = template.replace(/\[LANDINGPAGE_NAME\]/g, enhancements.landingpageName);
                     if (enhancements.botName) template = template.replace(/\[ASSISTANT_NAME\]/g, enhancements.botName);
                     
                     const finalHtml = await processAndSaveCode(projectId, template, marketingRules);
@@ -336,7 +336,7 @@ export default async function handler(req, res) {
         } else if (responseContent.includes('```html')) {
             const visualHtml = responseContent.match(/```html([\s\S]*?)```/)?.[1].trim() || "";
             const finalHtml = await processAndSaveCode(projectId, visualHtml, marketingRules);
-            const conversationalText = responseContent.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
+            const conversationalText = responseContent.replace(/```html([\s\S]*?)```/, '').replace(/---[suggestions]---\s*\[.*\]/s, '').trim() || "Here are the changes you requested.";
             const finalResponseData = `${conversationalText}\n\n\`\`\`html\n${finalHtml}\n\`\`\``;
             
             return res.status(200).json({ 

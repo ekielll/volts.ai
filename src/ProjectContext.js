@@ -1,6 +1,6 @@
 // src/ProjectContext.js
 
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const ProjectContext = createContext();
 
@@ -8,9 +8,8 @@ export const useProjectContext = () => {
     return useContext(ProjectContext);
 };
 
-// CORRECTED: This default state now includes the scripts for Tailwind CSS
-// and is designed to work with your original AiInterface.js component.
-const initialProjectState = {
+// This function will now be the single source of truth for the initial state.
+const getInitialState = () => ({
     previewCode: `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,17 +26,39 @@ const initialProjectState = {
     chatHistory: [
         { from: 'ai', text: "Hello. I'm Zoltrak. Ask me to design something! What kind of project are you starting?" }
     ],
-    // Setting interactionCount to 0 ensures your original logic will show the template buttons
-    interactionCount: 0, 
-};
+    interactionCount: 0,
+});
 
 
 export const ProjectProvider = ({ children }) => {
-    const [activeProject, setActiveProject] = useState(initialProjectState);
+    // Attempt to load the active project from sessionStorage on initial render.
+    const [activeProject, setActiveProject] = useState(() => {
+        try {
+            const savedProject = sessionStorage.getItem('activeProject');
+            return savedProject ? JSON.parse(savedProject) : null;
+        } catch (error) {
+            console.error("Failed to parse active project from sessionStorage", error);
+            return null;
+        }
+    });
+
+    // This effect persists the activeProject to sessionStorage whenever it changes.
+    useEffect(() => {
+        try {
+            if (activeProject) {
+                sessionStorage.setItem('activeProject', JSON.stringify(activeProject));
+            } else {
+                sessionStorage.removeItem('activeProject');
+            }
+        } catch (error) {
+            console.error("Failed to save active project to sessionStorage", error);
+        }
+    }, [activeProject]);
 
     // This function starts a completely new, temporary session
     const startNewProject = () => {
-        setActiveProject(initialProjectState);
+        const initialState = getInitialState();
+        setActiveProject(initialState);
     };
 
     // This function loads a saved project's state into the session
@@ -49,7 +70,7 @@ export const ProjectProvider = ({ children }) => {
         });
     };
     
-    // This function clears the session (e.g., after saving)
+    // This function clears the session (e.g., after saving or discarding)
     const clearActiveProject = () => {
         setActiveProject(null);
     };

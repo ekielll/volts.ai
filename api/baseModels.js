@@ -113,7 +113,7 @@ ECOMMERCE: `
     </body>
     </html>`,
 
-BLOG: `
+LANDINGPAGE: `
     <!DOCTYPE html>
     <html lang="en" class="scroll-smooth">
     <head>
@@ -121,12 +121,11 @@ BLOG: `
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
-        <style>body { font-family: 'Poppins', sans-serif; } .font-serif { font-family: 'Lora', serif; }</style>
-        <title>Your Awesome Blog</title>
+        <style>body { font-family: 'Poppins', sans-serif; }</style>
+        <title>Your Awesome Landing Page</title>
     </head>
     <body class="bg-gray-100 text-gray-800">
-        <header class="bg-white border-b py-6"><div class="container mx-auto px-6 text-center"><h1 id="blog-title" class="text-5xl font-bold">[BLOG_NAME]</h1><p id="blog-subtitle" class="text-gray-500 mt-2">Your daily dose of insights and inspiration.</p></div></header>
+        <header class="bg-white border-b py-6"><div class="container mx-auto px-6 text-center"><h1 id="blog-title" class="text-5xl font-bold">[LANDINGPAGE_NAME]</h1><p id="blog-subtitle" class="text-gray-500 mt-2">Your daily dose of insights and inspiration.</p></div></header>
         <div class="container mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
             <main class="lg:col-span-2">
                 <article class="mb-12"><div class="bg-gray-300 w-full h-80 rounded-lg mb-6"></div><h2 class="text-4xl font-bold mb-3">Featured Post: Getting Started with AI</h2><p class="text-gray-500 mb-4">Posted on July 9, 2025</p><div class="font-serif text-lg leading-relaxed space-y-4"><p>This is an excerpt of your first featured blog post. It's designed for maximum readability and impact, drawing the reader in from the very first sentence...</p></div><a href="#" class="text-purple-600 font-bold mt-4 inline-block">Read More &rarr;</a></article>
@@ -137,7 +136,7 @@ BLOG: `
             </main>
             <aside class="lg:col-span-1"><div class="bg-white p-6 rounded-lg shadow-md"><h3 class="font-bold text-xl mb-4">About the Author</h3><p class="text-gray-600">A short bio about yourself or your publication. Let your readers know who is behind the words.</p></div><div class="bg-white p-6 rounded-lg shadow-md mt-8"><h3 class="font-bold text-xl mb-4">Categories</h3><ul class="space-y-2 text-purple-600"><li><a href="#" class="hover:underline">Technology</a></li><li><a href="#" class="hover:underline">Productivity</a></li><li><a href="#" class="hover:underline">Design</a></li><li><a href="#" class="hover:underline">Personal Growth</a></li></ul></div></aside>
         </div>
-        <footer class="bg-gray-800 text-white text-center py-10"><p>&copy; 2025 Your Blog. All Rights Reserved.</p></footer>
+        <footer class="bg-gray-800 text-white text-center py-10"><p>&copy; 2025 Your Landing Page. All Rights Reserved.</p></footer>
     </body>
     </html>`,
 

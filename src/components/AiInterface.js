@@ -210,7 +210,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         </body>
         </html>`;
 
-    const initialBlogPreview = `
+    const initialLandingPagePreview = `
         <!DOCTYPE html>
         <html lang="en" class="scroll-smooth">
         <head>
@@ -218,62 +218,22 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-            <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
-            <style>body { font-family: 'Poppins', sans-serif; } .font-serif { font-family: 'Lora', serif; }</style>
-            <title>Your Awesome Blog</title>
+            <style>body { font-family: 'Poppins', sans-serif; }</style>
+            <title>Your Awesome Landing Page</title>
         </head>
         <body class="bg-gray-100 text-gray-800">
-            <header class="bg-white border-b py-6">
-                <div class="container mx-auto px-6 text-center">
-                    <h1 id="blog-title" class="text-5xl font-bold">The Daily Chronicle</h1>
-                    <p id="blog-subtitle" class="text-gray-500 mt-2">Your daily dose of insights and inspiration.</p>
-                </div>
-            </header>
+            <header class="bg-white border-b py-6"><div class="container mx-auto px-6 text-center"><h1 id="blog-title" class="text-5xl font-bold">The Daily Chronicle</h1><p id="blog-subtitle" class="text-gray-500 mt-2">Your daily dose of insights and inspiration.</p></div></header>
             <div class="container mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <main class="lg:col-span-2">
-                    <article class="mb-12">
-                        <div class="bg-gray-300 w-full h-80 rounded-lg mb-6"></div>
-                        <h2 class="text-4xl font-bold mb-3">Featured Post: Getting Started with AI</h2>
-                        <p class="text-gray-500 mb-4">Posted on July 9, 2025</p>
-                        <div class="font-serif text-lg leading-relaxed space-y-4">
-                            <p>This is an excerpt of your first featured blog post. It's designed for maximum readability and impact, drawing the reader in from the very first sentence...</p>
-                        </div>
-                        <a href="#" class="text-purple-600 font-bold mt-4 inline-block">Read More &rarr;</a>
-                    </article>
+                    <article class="mb-12"><div class="bg-gray-300 w-full h-80 rounded-lg mb-6"></div><h2 class="text-4xl font-bold mb-3">Featured Post: Getting Started with AI</h2><p class="text-gray-500 mb-4">Posted on July 9, 2025</p><div class="font-serif text-lg leading-relaxed space-y-4"><p>This is an excerpt of your first featured blog post. It's designed for maximum readability and impact, drawing the reader in from the very first sentence...</p></div><a href="#" class="text-purple-600 font-bold mt-4 inline-block">Read More &rarr;</a></article>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <article>
-                            <div class="bg-gray-300 w-full h-56 rounded-lg mb-4"></div>
-                            <h3 class="text-2xl font-bold mb-2">Previous Post Title</h3>
-                            <p class="text-gray-600 font-serif">A short and catchy excerpt for another one of your amazing articles goes right here...</p>
-                            <a href="#" class="text-purple-600 font-bold mt-2 inline-block">Read More &rarr;</a>
-                        </article>
-                        <article>
-                            <div class="bg-gray-300 w-full h-56 rounded-lg mb-4"></div>
-                            <h3 class="text-2xl font-bold mb-2">Previous Post Title</h3>
-                            <p class="text-gray-600 font-serif">A short and catchy excerpt for another one of your amazing articles goes right here...</p>
-                            <a href="#" class="text-purple-600 font-bold mt-2 inline-block">Read More &rarr;</a>
-                        </article>
+                        <article><div class="bg-gray-300 w-full h-56 rounded-lg mb-4"></div><h3 class="text-2xl font-bold mb-2">Previous Post Title</h3><p class="text-gray-600 font-serif">A short and catchy excerpt for another one of your amazing articles goes right here...</p><a href="#" class="text-purple-600 font-bold mt-2 inline-block">Read More &rarr;</a></article>
+                        <article><div class="bg-gray-300 w-full h-56 rounded-lg mb-4"></div><h3 class="text-2xl font-bold mb-2">Previous Post Title</h3><p class="text-gray-600 font-serif">A short and catchy excerpt for another one of your amazing articles goes right here...</p><a href="#" class="text-purple-600 font-bold mt-2 inline-block">Read More &rarr;</a></article>
                     </div>
                 </main>
-                <aside class="lg:col-span-1">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="font-bold text-xl mb-4">About the Author</h3>
-                        <p class="text-gray-600">A short bio about yourself or your publication. Let your readers know who is behind the words.</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg shadow-md mt-8">
-                        <h3 class="font-bold text-xl mb-4">Categories</h3>
-                        <ul class="space-y-2 text-purple-600">
-                            <li><a href="#" class="hover:underline">Technology</a></li>
-                            <li><a href="#" class="hover:underline">Productivity</a></li>
-                            <li><a href="#" class="hover:underline">Design</a></li>
-                            <li><a href="#" class="hover:underline">Personal Growth</a></li>
-                        </ul>
-                    </div>
-                </aside>
+                <aside class="lg:col-span-1"><div class="bg-white p-6 rounded-lg shadow-md"><h3 class="font-bold text-xl mb-4">About the Author</h3><p class="text-gray-600">A short bio about yourself or your publication. Let your readers know who is behind the words.</p></div><div class="bg-white p-6 rounded-lg shadow-md mt-8"><h3 class="font-bold text-xl mb-4">Categories</h3><ul class="space-y-2 text-purple-600"><li><a href="#" class="hover:underline">Technology</a></li><li><a href="#" class="hover:underline">Productivity</a></li><li><a href="#" class="hover:underline">Design</a></li><li><a href="#" class="hover:underline">Personal Growth</a></li></ul></div></aside>
             </div>
-            <footer class="bg-gray-800 text-white text-center py-10">
-                <p>&copy; 2025 Your Blog. All Rights Reserved.</p>
-            </footer>
+            <footer class="bg-gray-800 text-white text-center py-10"><p>&copy; 2025 Your Landing Page. All Rights Reserved.</p></footer>
         </body>
         </html>`;
 
@@ -322,6 +282,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     // --- LOCAL UI STATE ---
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isThinking, setIsThinking] = useState(false);
     const [uploadedImage, setUploadedImage] = useState(null);
     const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
     const [projectFiles, setProjectFiles] = useState(null);
@@ -410,28 +371,35 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             e.preventDefault();
             e.stopPropagation();
 
-            const supportedTags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'DIV', 'IMG'];
+            let currentTarget = target;
+            while (currentTarget && !currentTarget.id) {
+                currentTarget = currentTarget.parentElement;
+            }
+            
+            if (!currentTarget) {
+                setSelectedElement(null);
+                return;
+            }
 
-            if (target && target.id) {
-                 if (target.tagName === 'A') {
-                    setCopilotModal({
-                        isOpen: true,
-                        mode: 'edit-link',
-                        element: { id: target.id, tagName: target.tagName, currentHref: target.getAttribute('href') },
-                        inputValue: target.getAttribute('href') || ''
-                    });
-                } else if (target.tagName === 'IMG') {
-                     setCopilotModal({
-                        isOpen: true,
-                        mode: 'change-image',
-                        element: { id: target.id, tagName: target.tagName, currentSrc: target.src },
-                        inputValue: ''
-                    });
-                } else if (supportedTags.includes(target.tagName)) {
-                    setSelectedElement({ id: target.id, tagName: target.tagName, content: target.innerText });
+            const elementId = currentTarget.id;
+            const tagName = currentTarget.tagName;
+
+            if (tagName === 'A') {
+                setCopilotModal({
+                    isOpen: true,
+                    mode: 'edit-link',
+                    element: { id: elementId, tagName, currentHref: currentTarget.getAttribute('href') },
+                    inputValue: currentTarget.getAttribute('href') || ''
+                });
+            } else if (tagName === 'IMG') {
+                const src = currentTarget.src;
+                if (!src || src.includes('placehold.co')) {
+                     imageUploadInputRef.current.click();
+                } else {
+                    setSelectedElement({ id: elementId, tagName, content: '' });
                 }
             } else {
-                setSelectedElement(null);
+                 setSelectedElement({ id: elementId, tagName, content: currentTarget.innerText });
             }
         };
 
@@ -533,8 +501,13 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         const currentInput = promptOverride || input;
         if ((!currentInput.trim() && !uploadedImage) || isLoading) return;
 
+        const simpleEditKeywords = ['change text', 'update color', 'set font', 'edit link'];
+        const isComplexRequest = !simpleEditKeywords.some(keyword => currentInput.toLowerCase().includes(keyword));
+        
+        setIsLoading(true);
+        setIsThinking(isComplexRequest);
+
         const userMessage = { from: 'user', text: currentInput, image: uploadedImage };
-        // Add user message to history immediately
         addMessageToHistory(userMessage);
 
         const currentCode = activeProject.previewCode;
@@ -542,7 +515,6 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
 
         setInput('');
         setUploadedImage(null);
-        setIsLoading(true);
         setShowInitialButtons(false);
         setSuggestions([]);
         setSelectedElement(null);
@@ -574,20 +546,17 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             if (result.type === 'visual') {
                 const codeMatch = result.data.match(/```html([\s\S]*?)```/);
                 finalCode = codeMatch ? codeMatch[1].trim() : finalCode;
-                aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').trim() || "Here are the changes you requested.";
+                aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').replace(/---[suggestions]---\s*\[.*\]/s, '').trim() || "Here are the changes you requested.";
             } else if (result.type === 'project_zip') {
                 finalCode = result.files.html;
                 setProjectFiles(result.files);
                 setZipData(result.zip);
                 aiMessage.text = "I've generated the full project files for you.";
             } else {
-                aiMessage.text = result.data;
+                aiMessage.text = result.data.replace(/---[suggestions]---\s*\[.*\]/s, '').trim();
             }
 
-            // Add the AI's response to the history
             addMessageToHistory(aiMessage);
-
-            // Update the preview code separately
             updateActiveProject({ previewCode: finalCode });
 
             if (result.suggestions) {
@@ -600,6 +569,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             addMessageToHistory({ from: 'ai', text: `An error occurred: ${error.message}` });
         } finally {
             setIsLoading(false);
+            setIsThinking(false);
         }
     };
     
@@ -621,11 +591,11 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         if (lowerReply === 'website') newPreview = initialWebsitePreview;
         else if (lowerReply === 'portfolio') newPreview = initialPortfolioPreview;
         else if (lowerReply === 'e-commerce') newPreview = initialEcommercePreview;
-        else if (lowerReply === 'blog') newPreview = initialBlogPreview;
+        else if (lowerReply === 'landing page') newPreview = initialLandingPagePreview;
         else if (lowerReply === 'chatbot') newPreview = initialChatbotPreview;
 
         if (newPreview) {
-            addMessageToHistory({ from: 'user', text: `Create a ${reply} for me.` }); // Add this line
+            addMessageToHistory({ from: 'user', text: `Create a ${reply} for me.` }); 
             updatePreviewCode(newPreview);
             addMessageToHistory({ from: 'ai', text: `Here is a standard ${reply} template to get you started. What would you like to change?` });
             updateActiveProject({ interactionCount: (activeProject.interactionCount || 0) + 1 });
@@ -681,6 +651,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                         <ChatPanel
                             chatHistory={activeProject.chatHistory}
                             isLoading={isLoading}
+                            isThinking={isThinking}
                             showInitialButtons={showInitialButtons}
                             onQuickReply={handleQuickReply}
                             suggestions={suggestions}
