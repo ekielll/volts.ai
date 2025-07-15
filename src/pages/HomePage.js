@@ -11,17 +11,18 @@ import Footer from '../components/Footer';
 
 const HomePage = ({ handleOpenAuthModal }) => {
   return (
-    <div className="bg-[#111827] text-white">
+    <>
       <Navbar handleOpenAuthModal={handleOpenAuthModal} />
       <main>
         <HeroSection />
         <FeaturesSection />
         <HowItWorksSection />
-        <InteractiveDemoSection />
+        {/* UPDATED: Pass the handleOpenAuthModal function as a prop */}
+        <InteractiveDemoSection handleOpenAuthModal={handleOpenAuthModal} />
         <PricingSection handleChoosePlan={handleOpenAuthModal}/>
       </main>
       <Footer />
-    </div>
+    </>
   );
 };
 

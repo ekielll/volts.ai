@@ -1,7 +1,6 @@
 // src/components/FeaturesSection.js
 
 import React from 'react';
-// NEW ICONS: BrainCircuit for AI, Infinity for no limits, ImageUp for visual input
 import { BrainCircuit, Infinity, ImageUp } from 'lucide-react';
 
 const FeaturesSection = () => {
@@ -26,7 +25,8 @@ const FeaturesSection = () => {
   return (
     <section id="features" className="py-20 bg-[#1F2937] px-6">
       <div className="container mx-auto text-center">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 font-elegant">A Radically New Workflow</h2>
+        {/* UPDATED: Headline changed to be simpler and more natural. */}
+        <h2 className="text-4xl md:text-5xl font-bold mb-4 font-elegant">Create at the Speed of Thought</h2>
         <p className="text-gray-300 max-w-3xl mx-auto mb-16 text-lg">
           Experience a creation process where your ideas, not tool limitations, define the outcome.
         </p>
