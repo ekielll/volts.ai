@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { BrainCircuit, Infinity, ImageUp } from 'lucide-react';
+import CommercialAnimation from './CommercialAnimation'; // Import the new component
 
 const FeaturesSection = () => {
   const features = [
@@ -27,9 +28,15 @@ const FeaturesSection = () => {
       <div className="container mx-auto text-center">
         {/* UPDATED: Headline changed to be simpler and more natural. */}
         <h2 className="text-4xl md:text-5xl font-bold mb-4 font-elegant">Create at the Speed of Thought</h2>
-        <p className="text-gray-300 max-w-3xl mx-auto mb-16 text-lg">
+        <p className="text-gray-300 max-w-3xl mx-auto mb-12 text-lg">
           Experience a creation process where your ideas, not tool limitations, define the outcome.
         </p>
+
+        {/* The new animation component is added here */}
+        <div className="max-w-4xl mx-auto mb-20">
+            <CommercialAnimation />
+        </div>
+
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <div key={index} className="feature-card p-8 rounded-xl flex flex-col items-center text-center">

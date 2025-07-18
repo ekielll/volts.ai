@@ -1,3 +1,5 @@
+// src/components/HeroSection.js
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
@@ -19,7 +21,7 @@ const HeroSection = () => {
             <span className="text-gray-500 mx-2">·</span>
             <span className="shimmer-text font-bold">Deliver</span>
         </div>
-        <button 
+        <button
           onClick={() => navigate('/ai-interface')}
           className="premium-button text-white font-bold py-3 px-10 rounded-lg text-lg font-premium"
         >
