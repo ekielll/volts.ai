@@ -1,7 +1,7 @@
 // src/components/TemplateCard.js
 
 import React from 'react';
-import { Plus, Eye, Check } from 'lucide-react';
+import { Eye, Check } from 'lucide-react';
 
 const TemplateCard = ({ template, onComponentSelect, onPreview, selectedComponents }) => {
     return (

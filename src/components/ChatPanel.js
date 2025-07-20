@@ -1,38 +1,9 @@
-// /src/components/ChatPanel.js
+// src/components/ChatPanel.js
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Paperclip, ImageIcon, Zap, BrainCircuit, Paintbrush, Loader2 } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { Paperclip, ImageIcon, Loader2 } from 'lucide-react';
 
-const thinkingMessages = [
-    { icon: <Zap className="w-5 h-5 text-yellow-400" />, text: "Analyzing your request..." },
-    { icon: <BrainCircuit className="w-5 h-5 text-purple-400" />, text: "Architecting the components..." },
-    { icon: <Paintbrush className="w-5 h-5 text-blue-400" />, text: "Applying the new styles..." },
-];
-
-const Typewriter = ({ message }) => {
-    const [text, setText] = useState('');
-    
-    useEffect(() => {
-        setText('');
-        let i = 0;
-        const intervalId = setInterval(() => {
-            if (i < message.text.length) {
-                setText(prev => prev + message.text.charAt(i));
-                i++;
-            } else {
-                clearInterval(intervalId);
-            }
-        }, 50);
-        return () => clearInterval(intervalId);
-    }, [message]);
-
-    return (
-        <div className="flex items-center gap-2 text-sm font-premium text-purple-300">
-            {message.icon}
-            <p>{text}</p>
-        </div>
-    );
-};
+// Remove Typewriter and thinkingMessages logic
 
 const ChatPanel = ({
     chatHistory,
@@ -47,59 +18,75 @@ const ChatPanel = ({
     setInput,
     uploadedImage,
     handleFileChange,
-    fileInputRef
+    fileInputRef,
+    onRemoveSuggestions // new prop
 }) => {
     const chatEndRef = useRef(null);
-    const [currentThinkingMessage, setCurrentThinkingMessage] = useState(thinkingMessages[0]);
+    // Remove currentThinkingMessage state
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Debug: Log chatHistory being rendered
+        console.log('[DEBUG] ChatPanel rendering chatHistory:', chatHistory);
     }, [chatHistory, isLoading]);
 
-    useEffect(() => {
-        let interval;
-        if (isThinking) {
-            let index = 0;
-            interval = setInterval(() => {
-                index = (index + 1) % thinkingMessages.length;
-                setCurrentThinkingMessage(thinkingMessages[index]);
-            }, 2500);
-        }
-        return () => clearInterval(interval);
-    }, [isThinking]);
+    // Remove useEffect for thinking message animation
 
+    // Remove if (isThinking) { console.log('[DEBUG] currentThinkingMessage:', currentThinkingMessage); }
     return (
         <div className="w-full h-full bg-black/10 p-4 flex flex-col border-r border-white/10">
             <h2 className="text-lg font-bold mb-4 text-white font-premium flex-shrink-0">Chat with Zoltrak</h2>
             <div className="flex-grow overflow-y-auto pr-2 space-y-4">
-                {chatHistory.map((msg, index) => (
-                    <div key={index} className={`flex items-end gap-3 ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.from === 'ai' && (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            </div>
-                        )}
-                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md ${msg.from === 'user' ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-700/80 text-gray-200 rounded-bl-none'}`}>
-                            {msg.image && <img src={msg.image} alt="upload-preview" className="rounded-lg mb-2 max-h-40" />}
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text.replace(/---[suggestions]---\s*\[.*\]/s, '').trim()}</p>
-                            {msg.suggestions && msg.suggestions.length > 0 && !isLoading && (
-                                <div className="mt-4 pt-3 border-t border-white/10">
-                                    <div className="flex flex-wrap gap-2">
-                                        {msg.suggestions.map((suggestion, i) => (
-                                            <button key={i} onClick={() => onSuggestionClick(suggestion)} className="bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 font-medium py-1.5 px-3 rounded-full text-xs transition-all duration-300">
-                                                {suggestion}
-                                            </button>
-                                        ))}
+                {chatHistory.map((msg, index) => {
+                    // Fallback: Parse suggestions from text if not present as a property
+                    let suggestions = msg.suggestions;
+                    let displayText = msg.text;
+                    if (!suggestions && typeof msg.text === 'string' && msg.text.includes('---[suggestions]---')) {
+                        const match = msg.text.match(/---\[suggestions\]---\s*(\[.*?\])/s);
+                        if (match && match[1]) {
+                            try {
+                                suggestions = JSON.parse(match[1]);
+                            } catch (e) {
+                                suggestions = [];
+                            }
+                        }
+                        // Remove the suggestions block from the displayed text
+                        displayText = msg.text.replace(/---\[suggestions\]---\s*\[.*?\]/s, '').trim();
+                    }
+                    return (
+                        <div key={index} className={`flex flex-col gap-1 ${msg.from === 'user' ? 'items-end' : 'items-start'}`}>
+                            <div className={`flex items-end gap-3 ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                {msg.from === 'ai' && (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex self-start">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
                                     </div>
+                                )}
+                                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md ${msg.from === 'user' ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-none' : 'bg-gray-700/80 text-gray-200 rounded-bl-none'}`}>
+                                    {msg.image && <img src={msg.image} alt="upload-preview" className="rounded-lg mb-2 max-h-40" />}
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{displayText}</p>
+                                </div>
+                            </div>
+                            {/* Inline suggestions for AI messages */}
+                            {msg.from === 'ai' && suggestions && suggestions.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-1 ml-12">
+                                    {suggestions.map((suggestion, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => onSuggestionClick(suggestion, index)}
+                                            className="bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 font-medium py-1.5 px-3 rounded-full text-xs transition-all duration-300"
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
                                 </div>
                             )}
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {showInitialButtons && !isLoading && (
                     <div className="flex flex-wrap gap-2 pt-2">
@@ -109,31 +96,52 @@ const ChatPanel = ({
                     </div>
                 )}
                 
-                {isLoading && (
+                {isLoading && isThinking && (
                     <div className="flex items-end gap-3 justify-start">
-                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
-                        <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md bg-gray-700/80 text-gray-200 rounded-bl-none">
-                           {isThinking ? (
-                                <Typewriter message={currentThinkingMessage} />
-                           ) : (
-                               <div className="flex items-center gap-2 text-sm text-gray-400">
-                                   <Loader2 className="w-4 h-4 animate-spin"/>
-                                   <span>Processing...</span>
-                               </div>
-                           )}
+                        <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md bg-gray-700/80 text-gray-200 rounded-bl-none flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                            <span className="text-sm font-premium text-purple-300">Zoltrak is thinking...</span>
+                        </div>
+                    </div>
+                )}
+                {isLoading && !isThinking && (
+                    <div className="flex items-end gap-3 justify-start">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex-shrink-0 items-center justify-center flex">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M12 12V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-md bg-gray-700/80 text-gray-200 rounded-bl-none flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                            <span className="text-sm font-premium text-gray-400">Processing...</span>
                         </div>
                     </div>
                 )}
                 <div ref={chatEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="mt-4 flex-shrink-0 flex items-center bg-gray-900/50 rounded-lg p-1 border border-white/10">
+            {!isLoading && suggestions && suggestions.length > 0 && (
+                <div className="flex-shrink-0 pt-3 mb-2 border-t border-white/10">
+                    <div className="flex flex-wrap gap-2">
+                        {suggestions.map((suggestion, i) => (
+                            <button key={i} onClick={() => onSuggestionClick(suggestion)} className="bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 font-medium py-1.5 px-3 rounded-full text-xs transition-all duration-300">
+                                {suggestion}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <form onSubmit={handleSendMessage} className="flex-shrink-0 flex items-center bg-gray-900/50 rounded-lg p-1 border border-white/10">
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 <button onClick={() => fileInputRef.current.click()} type="button" className="p-2 text-gray-400 hover:text-white transition-colors">
                     <Paperclip className="w-5 h-5" />

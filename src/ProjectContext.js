@@ -63,10 +63,12 @@ export const ProjectProvider = ({ children }) => {
 
     // This function loads a saved project's state into the session
     const loadProject = (projectData) => {
+        // Ensure all message properties are preserved
+        const safeChatHistory = (projectData.chatHistory || []).map(msg => ({ ...msg }));
         setActiveProject({
             previewCode: projectData.htmlCode,
-            chatHistory: projectData.chatHistory,
-            interactionCount: projectData.chatHistory.length,
+            chatHistory: safeChatHistory,
+            interactionCount: safeChatHistory.length,
         });
     };
     
@@ -83,7 +85,8 @@ export const ProjectProvider = ({ children }) => {
 
     const addMessageToHistory = (message) => {
         if (!activeProject) return;
-        const updatedHistory = [...activeProject.chatHistory, message];
+        // Use the full message object, preserving all properties
+        const updatedHistory = [...activeProject.chatHistory, { ...message }];
         setActiveProject(prev => ({ ...prev, chatHistory: updatedHistory, interactionCount: prev.interactionCount + 1 }));
     };
 

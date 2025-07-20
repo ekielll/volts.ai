@@ -294,8 +294,6 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     const [showInitialButtons, setShowInitialButtons] = useState(true);
     const [pageSections, setPageSections] = useState([]);
     const [previewMode, setPreviewMode] = useState('desktop');
-    const [history, setHistory] = useState([]);
-    const [historyIndex, setHistoryIndex] = useState(-1);
 
     const [copilotModal, setCopilotModal] = useState({
         isOpen: false,
@@ -543,7 +541,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             if (result.type === 'visual') {
                 const codeMatch = result.data.match(/```html([\s\S]*?)```/);
                 finalCode = codeMatch ? codeMatch[1].trim() : finalCode;
-                aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').replace(/---[suggestions]---\s*\[.*\]/s, '').trim() || "Here are the changes you requested.";
+                aiMessage.text = result.data.replace(/```html([\s\S]*?)```/, '').replace(/---[suggestions]---\s*\[.*\]/s, '').trim();
             } else if (result.type === 'project_zip') {
                 finalCode = result.files.html;
                 setProjectFiles(result.files);
@@ -553,12 +551,18 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                 aiMessage.text = result.data.replace(/---[suggestions]---\s*\[.*\]/s, '').trim();
             }
 
-            if (result.suggestions) {
-                aiMessage.suggestions = result.suggestions;
+            // UPGRADED: This is the crucial fix. It sets the suggestions state.
+            if (result.suggestions && result.suggestions.length > 0) {
+                setSuggestions(result.suggestions);
+                aiMessage.suggestions = result.suggestions; // Attach suggestions to the AI message
             }
 
             addMessageToHistory(aiMessage);
             updateActiveProject({ previewCode: finalCode });
+            // Debug: Log activeProject after update
+            setTimeout(() => {
+                console.log('[DEBUG] activeProject after update:', JSON.parse(JSON.stringify(activeProject)));
+            }, 100);
 
             if (onNewMessage) onNewMessage();
 
@@ -607,6 +611,9 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
         }
     };
 
+    const [history, setHistory] = useState([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+
     const handleUndo = useCallback(() => {
         if (historyIndex > 0) {
             const newIndex = historyIndex - 1;
@@ -624,7 +631,25 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
     }, [history, historyIndex, updatePreviewCode]);
 
 
-    const handleSuggestionClick = (suggestion) => { handleSendMessage(null, suggestion); };
+    const handleSuggestionClick = (suggestion, aiMsgIndex) => {
+        // 1. Remove suggestions from the relevant AI message (update chatHistory only)
+        if (activeProject) {
+            const updatedChatHistory = activeProject.chatHistory.map((msg, idx) => {
+                if (idx === aiMsgIndex && msg.from === 'ai') {
+                    const { suggestions, ...rest } = msg;
+                    return rest;
+                }
+                return msg;
+            });
+            // Only update chatHistory, not previewCode or anything else
+            updateActiveProject({ chatHistory: updatedChatHistory });
+        }
+        // 2. Add a new user message with the suggestion text
+        const userMessage = { from: 'user', text: suggestion };
+        addMessageToHistory(userMessage);
+        // 3. Trigger the AI response as if the user had typed the suggestion
+        handleSendMessage(null, suggestion);
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -633,6 +658,20 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
             reader.onloadend = () => { setUploadedImage(reader.result); };
             reader.readAsDataURL(file);
         }
+    };
+
+    // Remove suggestions from a specific AI message after a suggestion is clicked
+    const handleRemoveSuggestions = (aiMsgIndex) => {
+        if (!activeProject) return;
+        const updatedChatHistory = activeProject.chatHistory.map((msg, idx) => {
+            if (idx === aiMsgIndex && msg.from === 'ai') {
+                // Remove suggestions property
+                const { suggestions, ...rest } = msg;
+                return rest;
+            }
+            return msg;
+        });
+        updateActiveProject({ chatHistory: updatedChatHistory });
     };
 
     const containerClasses = isFullScreen ? "w-full h-full bg-[#1a202c]/80 backdrop-blur-xl shadow-2xl border border-white/10 rounded-xl overflow-hidden" : `w-full bg-[#1a202c]/80 backdrop-blur-xl shadow-2xl border border-white/10 ${isDemo ? 'rounded-xl overflow-hidden' : ''}`;
@@ -659,6 +698,7 @@ const AiInterface = ({ isDemo = false, isFullScreen = false, onNewMessage, profi
                             uploadedImage={uploadedImage}
                             handleFileChange={handleFileChange}
                             fileInputRef={fileInputRef}
+                            onRemoveSuggestions={handleRemoveSuggestions}
                         />
                     </Panel>
                     <PanelResizeHandle className="w-2 flex items-center justify-center bg-transparent group"><div className="w-px h-full bg-white/10 group-hover:bg-purple-500 transition-colors duration-200"></div></PanelResizeHandle>
